@@ -1,222 +1,280 @@
+import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
-import { toast } from 'react-toastify'
-import { placementService, trainingService, notificationService } from '../services/api'
-import { 
-  BriefcaseIcon, 
-  AcademicCapIcon, 
-  CheckCircleIcon,
-  BellIcon,
-  ArrowRightIcon 
-} from '@heroicons/react/24/outline'
+import * as Icons from 'lucide-react'
+import { StatCard } from '../components/StatCard'
+import { DashboardCard } from '../components/DashboardCard'
+import { Badge } from '../components/Badge'
+import { Button } from '../components/Button'
+import { STATS, UPCOMING_DRIVES, NOTIFICATIONS, ACTIVITY_TIMELINE, AI_SUGGESTIONS, MOCK_TESTS } from '../constants/dummyData'
 
-const StudentDashboard = () => {
-  const [stats, setStats] = useState({
-    upcomingDrives: 0,
-    applications: 0,
-    enrolledCourses: 0,
-    testAttempts: 0,
-    unreadNotifications: 0,
-  })
-  const [loading, setLoading] = useState(true)
-  const [recentApps, setRecentApps] = useState([])
+export const StudentDashboard = () => {
+  const [animateCounters, setAnimateCounters] = useState(false)
 
   useEffect(() => {
-    fetchDashboardData()
+    setAnimateCounters(true)
   }, [])
 
-  const fetchDashboardData = async () => {
-    try {
-      const [drives, apps, courses, notifs] = await Promise.all([
-        placementService.getUpcomingDrives(),
-        placementService.getApplications(),
-        trainingService.getEnrollments(),
-        notificationService.getUnreadNotifications(),
-      ])
-
-      setStats({
-        upcomingDrives: drives.data?.length || 0,
-        applications: apps.data?.length || 0,
-        enrolledCourses: courses.data?.length || 0,
-        testAttempts: 0,
-        unreadNotifications: notifs.data?.length || 0,
-      })
-
-      setRecentApps(apps.data?.slice(0, 3) || [])
-    } catch (error) {
-      toast.error('Failed to load dashboard')
-    } finally {
-      setLoading(false)
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2
+      }
     }
   }
 
-  const statCards = [
-    {
-      title: 'Upcoming Drives',
-      value: stats.upcomingDrives,
-      icon: BriefcaseIcon,
-      color: 'bg-blue-100 text-blue-600',
-      link: '/placement-drives',
-    },
-    {
-      title: 'Applications',
-      value: stats.applications,
-      icon: CheckCircleIcon,
-      color: 'bg-green-100 text-green-600',
-      link: '/applications',
-    },
-    {
-      title: 'Enrolled Courses',
-      value: stats.enrolledCourses,
-      icon: AcademicCapIcon,
-      color: 'bg-purple-100 text-purple-600',
-      link: '/mock-tests',
-    },
-    {
-      title: 'Notifications',
-      value: stats.unreadNotifications,
-      icon: BellIcon,
-      color: 'bg-yellow-100 text-yellow-600',
-      link: '/notifications',
-    },
-  ]
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    )
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.3 } }
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      {/* Welcome Section */}
-      <div className="mb-12">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">Welcome Back!</h1>
-        <p className="text-gray-600">Here's what's happening with your placements</p>
-      </div>
+    <div className="space-y-8">
+      {/* Page Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-8"
+      >
+        <h1 className="text-4xl font-bold text-slate-900 mb-2">Welcome back, Rahul 👋</h1>
+        <p className="text-slate-600">Here's your recruitment dashboard snapshot</p>
+      </motion.div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        {statCards.map((card, idx) => {
-          const Icon = card.icon
-          return (
-            <Link
-              key={idx}
-              to={card.link}
-              className="card hover:shadow-xl transition-all cursor-pointer group"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-600 text-sm font-medium">{card.title}</p>
-                  <p className="text-4xl font-bold text-gray-900 mt-2">{card.value}</p>
-                </div>
-                <div className={`${card.color} p-3 rounded-xl group-hover:scale-110 transition-transform`}>
-                  <Icon className="w-8 h-8" />
-                </div>
-              </div>
-            </Link>
-          )
-        })}
-      </div>
+      {/* Stats Grid */}
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+      >
+        <motion.div variants={itemVariants}>
+          <StatCard
+            icon={Icons.Briefcase}
+            label="Applied Drives"
+            value={STATS.appliedDrives}
+            trend={15}
+            color="blue"
+          />
+        </motion.div>
+        <motion.div variants={itemVariants}>
+          <StatCard
+            icon={Icons.TrendingUp}
+            label="Upcoming Drives"
+            value={STATS.upcomingDrives}
+            trend={20}
+            color="purple"
+          />
+        </motion.div>
+        <motion.div variants={itemVariants}>
+          <StatCard
+            icon={Icons.FileText}
+            label="Resume Score"
+            value={`${STATS.resumeScore}%`}
+            trend={5}
+            color="emerald"
+          />
+        </motion.div>
+        <motion.div variants={itemVariants}>
+          <StatCard
+            icon={Icons.Award}
+            label="Tests Completed"
+            value={STATS.testsCompleted}
+            trend={25}
+            color="orange"
+          />
+        </motion.div>
+      </motion.div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-        {/* Recent Applications */}
-        <div className="lg:col-span-2 card">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold">Recent Applications</h2>
-            <Link to="/applications" className="text-blue-600 hover:text-blue-700 font-medium">
-              View All
-            </Link>
-          </div>
-
-          {recentApps.length > 0 ? (
-            <div className="space-y-4">
-              {recentApps.map((app) => (
-                <div key={app.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="font-semibold text-gray-900">
-                      {app.drive?.company?.name} - {app.drive?.role}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Status: <span className={`font-semibold ${
-                        app.status === 'selected' ? 'text-green-600' :
-                        app.status === 'rejected' ? 'text-red-600' :
-                        'text-blue-600'
-                      }`}>
-                        {app.status.replace('_', ' ').toUpperCase()}
-                      </span>
-                    </p>
+      {/* Main Content Grid */}
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+      >
+        {/* Upcoming Drives - Full Width */}
+        <motion.div variants={itemVariants} className="lg:col-span-2">
+          <DashboardCard title="Upcoming Placement Drives" icon={Icons.Calendar}>
+            <div className="space-y-3">
+              {UPCOMING_DRIVES.map((drive, idx) => (
+                <motion.div
+                  key={drive.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                  whileHover={{ translateX: 5 }}
+                  className="group p-4 rounded-xl border border-slate-200 hover:border-indigo-300 bg-slate-100 hover:bg-slate-200 transition-all cursor-pointer"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-4 flex-1">
+                      <img
+                        src={drive.logo}
+                        alt={drive.company}
+                        className="w-12 h-12 rounded-lg border border-slate-200"
+                      />
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-slate-900">{drive.company}</h3>
+                        <p className="text-sm text-slate-600 mt-1">{drive.position}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Badge variant="success" size="xs">
+                            {drive.package}
+                          </Badge>
+                          <Badge variant="default" size="xs">
+                            {drive.eligibility}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                    <Button variant="primary" size="sm">
+                      Apply Now
+                    </Button>
                   </div>
-                  <ArrowRightIcon className="w-5 h-5 text-gray-400" />
-                </div>
+                </motion.div>
               ))}
             </div>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-gray-500">No applications yet</p>
-              <Link to="/placement-drives" className="btn-primary mt-4 inline-block">
-                Browse Drives
-              </Link>
+          </DashboardCard>
+        </motion.div>
+
+        {/* AI Suggestions */}
+        <motion.div variants={itemVariants}>
+          <DashboardCard title="AI Suggestions" icon={Icons.Lightbulb}>
+            <div className="space-y-3">
+              {AI_SUGGESTIONS.slice(0, 3).map((suggestion, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: idx * 0.1 }}
+                  className="p-3 rounded-lg bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border border-yellow-500/20 text-sm text-yellow-300"
+                >
+                  💡 {suggestion}
+                </motion.div>
+              ))}
             </div>
-          )}
-        </div>
+          </DashboardCard>
+        </motion.div>
+      </motion.div>
 
-        {/* Quick Links */}
-        <div className="card">
-          <h3 className="text-lg font-bold mb-6">Quick Links</h3>
-          <div className="space-y-3">
-            <Link
-              to="/placement-drives"
-              className="flex items-center justify-between p-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
-            >
-              <span className="font-medium text-blue-900">Browse Drives</span>
-              <ArrowRightIcon className="w-5 h-5" />
-            </Link>
-            <Link
-              to="/mock-tests"
-              className="flex items-center justify-between p-3 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
-            >
-              <span className="font-medium text-green-900">Take Tests</span>
-              <ArrowRightIcon className="w-5 h-5" />
-            </Link>
-            <Link
-              to="/profile"
-              className="flex items-center justify-between p-3 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
-            >
-              <span className="font-medium text-purple-900">Update Profile</span>
-              <ArrowRightIcon className="w-5 h-5" />
-            </Link>
-            <Link
-              to="/notifications"
-              className="flex items-center justify-between p-3 bg-yellow-50 hover:bg-yellow-100 rounded-lg transition-colors"
-            >
-              <span className="font-medium text-yellow-900">Notifications</span>
-              <ArrowRightIcon className="w-5 h-5" />
-            </Link>
+      {/* Second Row */}
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+      >
+        {/* Recent Notifications */}
+        <motion.div variants={itemVariants}>
+          <DashboardCard title="Recent Notifications" icon={Icons.Bell}>
+            <div className="space-y-3">
+              {NOTIFICATIONS.slice(0, 4).map((notification, idx) => (
+                <motion.div
+                  key={notification.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  className={`p-3 rounded-lg border transition-all ${
+                    notification.read
+                      ? 'bg-slate-100 border-slate-200'
+                      : 'bg-indigo-500/10 border-indigo-500/20'
+
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className={`text-sm font-medium ${notification.read ? 'text-slate-500' : 'text-slate-900'}`}>
+                        {notification.title}
+                      </p>
+                      <p className="text-xs text-slate-600 mt-1">{notification.message}</p>
+                    </div>
+                    {!notification.read && (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="w-2 h-2 bg-blue-500 rounded-full mt-1 flex-shrink-0"
+                      />
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </DashboardCard>
+        </motion.div>
+
+        {/* Activity Timeline */}
+        <motion.div variants={itemVariants}>
+          <DashboardCard title="Recent Activity" icon={Icons.ActivitySquare}>
+            <div className="space-y-4">
+              {ACTIVITY_TIMELINE.map((activity, idx) => {
+                const IconComponent = Icons[activity.icon === 'briefcase' ? 'Briefcase' : activity.icon === 'award' ? 'Award' : activity.icon === 'user' ? 'User' : activity.icon === 'check' ? 'CheckCircle2' : 'BookOpen']
+                return (
+                  <motion.div
+                    key={activity.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: idx * 0.05 }}
+                    className="flex gap-4"
+                  >
+                    <div className="flex flex-col items-center">
+                      <motion.div
+                        whileHover={{ scale: 1.2 }}
+                        className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 flex items-center justify-center flex-shrink-0"
+                      >
+                        <IconComponent className="w-5 h-5 text-indigo-600" />
+                      </motion.div>
+                      {idx < ACTIVITY_TIMELINE.length - 1 && (
+                        <div className="w-0.5 h-12 bg-gradient-to-b from-blue-500/50 to-transparent my-1" />
+                      )}
+                    </div>
+                    <div className="flex-1 py-2">
+                      <p className="text-sm font-medium text-slate-900">{activity.action}</p>
+                      <p className="text-xs text-slate-600">{activity.date}</p>
+                    </div>
+                  </motion.div>
+                )
+              })}
+            </div>
+          </DashboardCard>
+        </motion.div>
+      </motion.div>
+
+      {/* Mock Test Performance */}
+      <motion.div variants={itemVariants}>
+        <DashboardCard title="Mock Test Performance" icon={Icons.Zap}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {MOCK_TESTS.map((test, idx) => (
+              <motion.div
+                key={test.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.05 }}
+                whileHover={{ scale: 1.02 }}
+                className="p-4 rounded-lg bg-white border border-slate-200 hover:border-indigo-300 transition-all"
+              >
+                <h4 className="font-semibold text-slate-900 text-sm mb-3">{test.name}</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-600">Best Score</span>
+                    <span className="text-indigo-600 font-semibold">{test.bestScore}/{test.totalAttempts}</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(test.bestScore / test.questions) * 100}%` }}
+                      transition={{ duration: 0.8, delay: 0.2 }}
+                      className="h-full bg-gradient-to-r from-indigo-500 to-purple-500"
+                    />
+                  </div>
+                  <Badge variant="default" size="xs">
+                    {test.completed ? '✓ Completed' : 'Not Started'}
+                  </Badge>
+                </div>
+              </motion.div>
+            ))}
           </div>
-        </div>
-      </div>
-
-      {/* Info Boxes */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-blue-50 border-l-4 border-blue-600 p-6 rounded-lg">
-          <h3 className="font-semibold text-blue-900 mb-2">💡 Pro Tip</h3>
-          <p className="text-blue-800 text-sm">
-            Complete your profile and take practice tests to increase your chances of getting selected.
-          </p>
-        </div>
-        <div className="bg-green-50 border-l-4 border-green-600 p-6 rounded-lg">
-          <h3 className="font-semibold text-green-900 mb-2">✨ Success Tip</h3>
-          <p className="text-green-800 text-sm">
-            Check your profile score and interview experiences from successful candidates.
-          </p>
-        </div>
-      </div>
+        </DashboardCard>
+      </motion.div>
     </div>
   )
 }
-
-export default StudentDashboard

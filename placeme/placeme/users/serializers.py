@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import StudentProfile, Company
 
 User = get_user_model()
 
@@ -31,29 +30,3 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         user.set_password(password)
         user.save()
         return user
-
-
-class StudentProfileSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
-    skills_list = serializers.SerializerMethodField()
-
-    class Meta:
-        model = StudentProfile
-        fields = ['id', 'user', 'branch', 'cgpa', 'skills', 'skills_list', 'resume_pdf', 
-                  'github_link', 'linkedin_link', 'bio', 'resume_score', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'created_at', 'updated_at', 'resume_score']
-
-    def get_skills_list(self, obj):
-        if obj.skills:
-            return [skill.strip() for skill in obj.skills.split(',')]
-        return []
-
-
-class CompanySerializer(serializers.ModelSerializer):
-    verified_by = UserSerializer(read_only=True)
-
-    class Meta:
-        model = Company
-        fields = ['id', 'name', 'email', 'industry', 'website', 'logo', 
-                  'description', 'verified', 'verified_by', 'created_at']
-        read_only_fields = ['id', 'verified_by', 'created_at']

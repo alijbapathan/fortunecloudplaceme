@@ -1,164 +1,188 @@
-import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
-import { toast } from 'react-toastify'
-import { placementService } from '../services/api'
-import {
-  BriefcaseIcon,
-  CalendarIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-} from '@heroicons/react/24/outline'
+import { motion } from 'framer-motion'
+import * as Icons from 'lucide-react'
+import { DashboardCard } from '../components/DashboardCard'
+import { Badge } from '../components/Badge'
+import { APPLICATIONS } from '../constants/dummyData'
 
-const Applications = () => {
-  const [applications, setApplications] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [filterStatus, setFilterStatus] = useState('all')
-
-  useEffect(() => {
-    fetchApplications()
-  }, [])
-
-  const fetchApplications = async () => {
-    try {
-      const { data } = await placementService.getApplications()
-      setApplications(data || [])
-    } catch (error) {
-      toast.error('Failed to load applications')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'shortlisted':
-        return 'bg-blue-100 text-blue-800'
-      case 'rejected':
-        return 'bg-red-100 text-red-800'
-      case 'accepted':
-        return 'bg-green-100 text-green-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'accepted':
-        return <CheckCircleIcon className="w-5 h-5 text-green-600" />
-      case 'rejected':
-        return <XCircleIcon className="w-5 h-5 text-red-600" />
-      default:
-        return null
-    }
-  }
-
-  const filteredApplications = applications.filter(app => {
-    if (filterStatus === 'all') return true
-    return app.status === filterStatus
-  })
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    )
-  }
-
+const StageIndicator = ({ stages }) => {
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">My Applications</h1>
-        <p className="text-gray-600">Track your placement drive applications</p>
-      </div>
-
-      {/* Filter Tabs */}
-      <div className="flex gap-4 mb-8 flex-wrap">
-        {['all', 'pending', 'shortlisted', 'accepted', 'rejected'].map(status => (
-          <button
-            key={status}
-            onClick={() => setFilterStatus(status)}
-            className={`px-4 py-2 rounded-lg font-medium transition ${
-              filterStatus === status
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+    <div className="flex items-center justify-between gap-2 mt-4">
+      {stages.map((stage, idx) => (
+        <motion.div key={idx} className="flex-1 flex flex-col items-center">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: idx * 0.1 }}
+            className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all ${
+              stage.completed
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/30'
+                : 'bg-slate-200 text-slate-600 border border-slate-300'
             }`}
           >
-            {status.charAt(0).toUpperCase() + status.slice(1)}
-          </button>
-        ))}
-      </div>
-
-      {/* Applications List */}
-      {filteredApplications.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-md p-12 text-center">
-          <BriefcaseIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">No applications</h2>
-          <p className="text-gray-600 mb-4">
-            {filterStatus === 'all'
-              ? "You haven't applied to any drives yet."
-              : `No ${filterStatus} applications yet.`}
-          </p>
-          <Link to="/placement-drives" className="btn-primary inline-block">
-            Browse Placement Drives
-          </Link>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {filteredApplications.map(app => (
+            {stage.completed ? '✓' : idx + 1}
+          </motion.div>
+          <p className="text-xs text-slate-600 mt-2 text-center">{stage.name}</p>
+          {idx < stages.length - 1 && (
             <div
-              key={app.id}
-              className="bg-white rounded-xl shadow-md hover:shadow-lg transition overflow-hidden"
-            >
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900">{app.drive?.role}</h3>
-                    <p className="text-gray-600">{app.drive?.company?.name}</p>
-                  </div>
-                  <div className={`px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(app.status)}`}>
-                    {app.status.toUpperCase()}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 text-sm text-gray-600">
-                  <div className="flex items-center space-x-2">
-                    <CalendarIcon className="w-4 h-4" />
-                    <span>Applied on {new Date(app.created_at).toLocaleDateString()}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <BriefcaseIcon className="w-4 h-4" />
-                    <span>{app.drive?.positions_available} positions</span>
-                  </div>
-                  {app.status !== 'pending' && (
-                    <div className="flex items-center space-x-2">
-                      {getStatusIcon(app.status)}
-                      <span>
-                        {app.status === 'accepted' && 'Congratulations!'}
-                        {app.status === 'rejected' && 'Better luck next time'}
-                        {app.status === 'shortlisted' && 'Keep preparing!'}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                <Link
-                  to={`/drives/${app.drive?.id}`}
-                  className="text-blue-600 hover:text-blue-700 font-medium text-sm"
-                >
-                  View Drive Details →
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+              className={`absolute h-0.5 w-[calc(100%-2rem)] top-4 -right-[calc(50%+1rem)] ${
+                stage.completed ? 'bg-gradient-to-r from-emerald-500 to-teal-500' : 'bg-white/10'
+              }`}
+            />
+          )}
+        </motion.div>
+      ))}
     </div>
   )
 }
 
-export default Applications
+export const Applications = () => {
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Applied':
+        return 'default'
+      case 'Under Review':
+        return 'warning'
+      case 'Shortlisted':
+        return 'success'
+      case 'Interview Scheduled':
+        return 'purple'
+      case 'Selected':
+        return 'success'
+      default:
+        return 'default'
+    }
+  }
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2
+      }
+    }
+  }
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.3 } }
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-8"
+      >
+        <h1 className="text-4xl font-bold text-slate-900 mb-2">My Applications</h1>
+        <p className="text-slate-600">Track the status of your job applications</p>
+      </motion.div>
+
+      {/* Stats */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="grid grid-cols-1 md:grid-cols-4 gap-4"
+      >
+        {[
+          { label: 'Total Applied', value: APPLICATIONS.length, color: 'blue' },
+          { label: 'Shortlisted', value: 1, color: 'emerald' },
+          { label: 'Interviews', value: 1, color: 'purple' },
+          { label: 'Rejected', value: 0, color: 'red' }
+        ].map((stat, idx) => (
+          <motion.div
+            key={idx}
+            whileHover={{ y: -2 }}
+            className={`p-4 rounded-lg border bg-gradient-to-br backdrop-blur-xl ${
+              stat.color === 'blue'
+                ? 'from-indigo-500/10 to-indigo-600/10 border-indigo-500/20'
+                : stat.color === 'emerald'
+                ? 'from-emerald-500/10 to-emerald-600/10 border-emerald-500/20'
+                : stat.color === 'purple'
+                ? 'from-purple-500/10 to-purple-600/10 border-purple-500/20'
+                : 'from-red-500/10 to-red-600/10 border-red-500/20'
+            }`}
+          >
+            <p className="text-xs text-slate-600">{stat.label}</p>
+            <p className="text-2xl font-bold text-slate-900 mt-1">{stat.value}</p>
+          </motion.div>
+        ))}
+      </motion.div>
+
+      {/* Applications List */}
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="space-y-6"
+      >
+        {APPLICATIONS.map((app, idx) => (
+          <motion.div
+            key={app.id}
+            variants={itemVariants}
+            className="overflow-hidden rounded-2xl border border-slate-200 backdrop-blur-xl bg-white hover:border-indigo-300 transition-all p-6"
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between mb-6">
+              <div>
+                <h3 className="text-xl font-bold text-slate-900">{app.company}</h3>
+                <p className="text-slate-600 text-sm mt-1">{app.position}</p>
+                <p className="text-xs text-slate-500 mt-2">Applied on: {app.appliedDate}</p>
+              </div>
+              <Badge variant={getStatusColor(app.status)}>
+                {app.status}
+              </Badge>
+            </div>
+
+            {/* Progress Timeline */}
+            <div className="relative">
+              <StageIndicator stages={app.stages} />
+            </div>
+
+            {/* Timeline View */}
+            <div className="mt-8 pt-6 border-t border-slate-200">
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{
+                        width: `${(app.stages.filter(s => s.completed).length / app.stages.length) * 100}%`
+                      }}
+                      transition={{ duration: 1, delay: 0.3 }}
+                      className="h-full bg-gradient-to-r from-indigo-500 to-purple-500"
+                    />
+                  </div>
+                </div>
+                <p className="text-sm text-slate-600">
+                  {app.stages.filter(s => s.completed).length}/{app.stages.length}
+                </p>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="mt-6 flex gap-3">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-900 text-sm font-medium transition-all border border-slate-200"
+              >
+                View Details
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-500/20 to-purple-500/20 text-indigo-600 text-sm font-medium transition-all border border-indigo-500/30 hover:border-indigo-500/50"
+              >
+                Follow Up
+              </motion.button>
+            </div>
+          </motion.div>
+        ))}
+      </motion.div>
+    </div>
+  )
+}

@@ -1,114 +1,86 @@
 from django.db import models
+from django.contrib.auth import get_user_model
 from django.utils import timezone
-from users.models import User, Company, StudentProfile
 
-class PlacementDrive(models.Model):
-    STATUS_CHOICES = [
-        ('upcoming', 'Upcoming'),
-        ('ongoing', 'Ongoing'),
-        ('completed', 'Completed'),
-        ('cancelled', 'Cancelled'),
-    ]
-    
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='placement_drives')
-    role = models.CharField(max_length=100)
-    package = models.DecimalField(max_digits=10, decimal_places=2)
+User = get_user_model()
+
+class Company(models.Model):
+    """Company conducting placement drives"""
+    name = models.CharField(max_length=255, unique=True)
+    logo_url = models.URLField(blank=True, null=True)
+    website = models.URLField(blank=True, null=True)
     description = models.TextField(blank=True)
-    eligibility_cgpa = models.FloatField(default=0.0)
-    required_skills = models.TextField(help_text="Comma-separated skills")
-    eligible_branches = models.CharField(max_length=500, help_text="Comma-separated branches")
-    drive_date = models.DateTimeField()
-    registration_deadline = models.DateTimeField()
-    total_positions = models.IntegerField()
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='upcoming')
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_drives')
+    location = models.CharField(max_length=255, blank=True)
+    industry = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
-    class Meta:
-        db_table = 'placement_drives'
-        ordering = ['-drive_date']
-    
+
     def __str__(self):
-        return f"{self.company.name} - {self.role}"
-    
+        return self.name
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name_plural = 'Companies'
+
+
+class Drive(models.Model):
+    """Placement drive by a company"""
+    ELIGIBILITY_CHOICES = [
+        ('All', 'All Branches'),
+        ('CSE', 'CSE Only'),
+        ('IT', 'IT Only'),
+        ('ECE', 'ECE Only'),
+    ]
+
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='drives')
+    position = models.CharField(max_length=255)
+    package = models.CharField(max_length=50, help_text="e.g., 12 LPA")
+    ctc = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    eligibility = models.CharField(max_length=50, choices=ELIGIBILITY_CHOICES, default='All')
+    required_skills = models.TextField(help_text="Comma-separated skills")
+    job_description = models.TextField(blank=True)
+    deadline = models.DateTimeField()
+    drive_date = models.DateTimeField(null=True, blank=True)
+    location = models.CharField(max_length=255, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.company.name} - {self.position}"
+
+    class Meta:
+        ordering = ['-deadline']
+
     @property
-    def applications_count(self):
-        return self.applications.filter(status='applied').count()
+    def days_left(self):
+        days = (self.deadline - timezone.now()).days
+        return max(0, days)
 
 
 class Application(models.Model):
+    """Student application to a drive"""
     STATUS_CHOICES = [
         ('applied', 'Applied'),
-        ('under_review', 'Under Review'),
+        ('reviewed', 'Under Review'),
         ('shortlisted', 'Shortlisted'),
-        ('rejected', 'Rejected'),
-        ('interview_scheduled', 'Interview Scheduled'),
+        ('interviewed', 'Interviewed'),
         ('selected', 'Selected'),
+        ('rejected', 'Rejected'),
     ]
-    
-    student = models.ForeignKey(StudentProfile, on_delete=models.CASCADE, related_name='applications')
-    drive = models.ForeignKey(PlacementDrive, on_delete=models.CASCADE, related_name='applications')
-    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='applied')
-    match_score = models.IntegerField(default=0, help_text="AI match score 0-100")
+
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='applications')
+    drive = models.ForeignKey(Drive, on_delete=models.CASCADE, related_name='applications')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='applied')
+    resume_url = models.URLField(blank=True, null=True)
     applied_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+    interview_date = models.DateTimeField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"{self.student.username} - {self.drive.position} @ {self.drive.company.name}"
+
     class Meta:
-        db_table = 'applications'
-        unique_together = ['student', 'drive']
         ordering = ['-applied_at']
-    
-    def __str__(self):
-        return f"{self.student.user.username} - {self.drive.role} @ {self.drive.company.name}"
-
-
-class InterviewSchedule(models.Model):
-    ROUND_CHOICES = [
-        ('aptitude', 'Aptitude'),
-        ('technical', 'Technical'),
-        ('hr', 'HR'),
-        ('group_discussion', 'Group Discussion'),
-    ]
-    
-    application = models.ForeignKey(Application, on_delete=models.CASCADE, related_name='interview_schedules')
-    round_type = models.CharField(max_length=30, choices=ROUND_CHOICES)
-    scheduled_date = models.DateTimeField()
-    location = models.CharField(max_length=200, blank=True, help_text="Online or physical location")
-    result = models.CharField(max_length=20, choices=[('pending', 'Pending'), ('pass', 'Pass'), ('fail', 'Fail')], default='pending')
-    feedback = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    
-    class Meta:
-        db_table = 'interview_schedules'
-        ordering = ['scheduled_date']
-    
-    def __str__(self):
-        return f"{self.application.student.user.username} - {self.round_type}"
-
-
-class InterviewExperience(models.Model):
-    DIFFICULTY_CHOICES = [
-        ('easy', 'Easy'),
-        ('medium', 'Medium'),
-        ('hard', 'Hard'),
-    ]
-    
-    student = models.ForeignKey(StudentProfile, on_delete=models.CASCADE, related_name='interview_experiences')
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='interview_experiences')
-    role = models.CharField(max_length=100)
-    rounds_description = models.TextField(help_text="Description of interview rounds")
-    difficulty = models.CharField(max_length=20, choices=DIFFICULTY_CHOICES)
-    questions_asked = models.TextField(blank=True, help_text="Questions asked in interview")
-    tips = models.TextField(blank=True, help_text="Tips for future candidates")
-    result = models.CharField(max_length=20, choices=[('selected', 'Selected'), ('rejected', 'Rejected')])
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
-    class Meta:
-        db_table = 'interview_experiences'
-        ordering = ['-created_at']
-    
-    def __str__(self):
-        return f"{self.student.user.username} - {self.company.name}"
-
+        unique_together = ('student', 'drive')

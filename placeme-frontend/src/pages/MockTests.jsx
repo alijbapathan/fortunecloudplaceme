@@ -1,146 +1,180 @@
-import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
-import { toast } from 'react-toastify'
-import { trainingService } from '../services/api'
-import {
-  AcademicCapIcon,
-  ClockIcon,
-  CheckCircleIcon,
-} from '@heroicons/react/24/outline'
+import { motion } from 'framer-motion'
+import * as Icons from 'lucide-react'
+import { DashboardCard } from '../components/DashboardCard'
+import { Button } from '../components/Button'
+import { Badge } from '../components/Badge'
+import { MOCK_TESTS } from '../constants/dummyData'
 
-const MockTests = () => {
-  const [tests, setTests] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [filterCategory, setFilterCategory] = useState('all')
-  const [searchTerm, setSearchTerm] = useState('')
-
-  useEffect(() => {
-    fetchTests()
-  }, [])
-
-  const fetchTests = async () => {
-    try {
-      const { data } = await trainingService.getMockTests()
-      setTests(data.results || data)
-    } catch (error) {
-      toast.error('Failed to load mock tests')
-    } finally {
-      setLoading(false)
+export const MockTests = () => {
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2
+      }
     }
   }
 
-  const getCategory = test => test.category || 'General'
-
-  const filteredTests = tests.filter(test => {
-    const matchesCategory = filterCategory === 'all' || getCategory(test) === filterCategory
-    const matchesSearch = test.title?.toLowerCase().includes(searchTerm.toLowerCase())
-    return matchesCategory && matchesSearch
-  })
-
-  const categories = ['all', ...new Set(tests.map(getCategory))]
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    )
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.3 } }
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Mock Tests</h1>
-        <p className="text-gray-600">Prepare for placements with our comprehensive mock tests</p>
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-8"
+      >
+        <h1 className="text-4xl font-bold text-slate-900 mb-2">Mock Tests</h1>
+        <p className="text-slate-600">Practice and improve your test-taking skills</p>
+      </motion.div>
 
-      {/* Search and Filter */}
-      <div className="mb-8 space-y-4">
-        {/* Search Bar */}
-        <input
-          type="text"
-          placeholder="Search tests..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full input-field"
-        />
-
-        {/* Category Filter */}
-        <div className="flex gap-2 flex-wrap">
-          {categories.map(category => (
-            <button
-              key={category}
-              onClick={() => setFilterCategory(category)}
-              className={`px-4 py-2 rounded-lg font-medium transition ${
-                filterCategory === category
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+      {/* Overall Stats */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="grid grid-cols-1 md:grid-cols-3 gap-6"
+      >
+        {[
+          { label: 'Tests Completed', value: '8', icon: Icons.CheckCircle2, color: 'emerald' },
+          { label: 'Average Score', value: '74%', icon: Icons.TrendingUp, color: 'blue' },
+          { label: 'Best Score', value: '92%', icon: Icons.Award, color: 'purple' }
+        ].map((stat, idx) => {
+          const Icon = stat.icon
+          return (
+            <motion.div
+              key={idx}
+              whileHover={{ y: -5 }}
+              className={`p-6 rounded-2xl border backdrop-blur-xl bg-gradient-to-br ${
+                stat.color === 'emerald'
+                  ? 'from-emerald-500/10 to-emerald-600/10 border-emerald-500/20'
+                  : stat.color === 'blue'
+                  ? 'from-blue-500/10 to-blue-600/10 border-blue-500/20'
+                  : 'from-purple-500/10 to-purple-600/10 border-purple-500/20'
               }`}
             >
-              {category.charAt(0).toUpperCase() + category.slice(1)}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Tests Grid */}
-      {filteredTests.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-md p-12 text-center">
-          <AcademicCapIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">No tests found</h2>
-          <p className="text-gray-600">Try adjusting your filters or search term</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredTests.map(test => (
-            <Link key={test.id} to={`/tests/${test.id}`}>
-              <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition h-full overflow-hidden hover:scale-105 transform">
-                <div className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-bold text-gray-900 mb-1">{test.title}</h3>
-                      <p className="text-sm text-gray-600">{getCategory(test)}</p>
-                    </div>
-                    <div className="bg-blue-100 px-3 py-1 rounded-full">
-                      <span className="text-sm font-medium text-blue-600">{test.difficulty || 'Medium'}</span>
-                    </div>
-                  </div>
-
-                  {test.description && (
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">{test.description}</p>
-                  )}
-
-                  <div className="space-y-2 mb-4 text-sm text-gray-600">
-                    <div className="flex items-center space-x-2">
-                      <ClockIcon className="w-4 h-4" />
-                      <span>{test.duration || 60} minutes</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <AcademicCapIcon className="w-4 h-4" />
-                      <span>{test.questions_count || 0} Questions</span>
-                    </div>
-                    {test.is_attempted && (
-                      <div className="flex items-center space-x-2">
-                        <CheckCircleIcon className="w-4 h-4 text-green-600" />
-                        <span className="text-green-600">Completed</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="pt-4 border-t">
-                    <span className="text-blue-600 hover:text-blue-700 font-medium text-sm">
-                      {test.is_attempted ? 'Retake Test' : 'Start Test'} →
-                    </span>
-                  </div>
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs text-slate-600 mb-2">{stat.label}</p>
+                  <p className="text-3xl font-bold text-slate-900">{stat.value}</p>
+                </div>
+                <div className={`p-3 rounded-lg bg-slate-100 ${
+                  stat.color === 'emerald' ? 'text-emerald-600' :
+                  stat.color === 'blue' ? 'text-indigo-600' : 'text-purple-600'
+                }`}>
+                  <Icon className="w-6 h-6" />
                 </div>
               </div>
-            </Link>
-          ))}
-        </div>
-      )}
+            </motion.div>
+          )
+        })}
+      </motion.div>
+
+      {/* Tests Grid */}
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+      >
+        {MOCK_TESTS.map((test) => (
+          <motion.div
+            key={test.id}
+            variants={itemVariants}
+            whileHover={{ y: -5 }}
+            className="overflow-hidden rounded-2xl border border-slate-200 backdrop-blur-xl bg-white hover:border-indigo-300 transition-all p-6"
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h3 className="text-xl font-bold text-slate-900">{test.name}</h3>
+                <p className="text-slate-600 text-sm mt-1">{test.category}</p>
+              </div>
+              {test.completed && (
+                <motion.div
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  className="p-2 rounded-lg bg-emerald-500/20"
+                >
+                  <Icons.CheckCircle2 className="w-6 h-6 text-emerald-400" />
+                </motion.div>
+              )}
+            </div>
+
+            {/* Test Info */}
+            <div className="grid grid-cols-2 gap-4 mb-6 p-4 rounded-lg bg-slate-100 border border-slate-200">
+              <div>
+                <p className="text-xs text-slate-600">Questions</p>
+                <p className="text-lg font-bold text-slate-900">{test.questions}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-600">Duration</p>
+                <p className="text-lg font-bold text-slate-900">{test.duration}m</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-600">Best Score</p>
+                <p className="text-lg font-bold text-indigo-600">{test.bestScore}/{test.questions}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-600">Attempts</p>
+                <p className="text-lg font-bold text-purple-600">{test.totalAttempts}</p>
+              </div>
+            </div>
+
+            {/* Performance Bar */}
+            {test.completed && (
+              <div className="mb-6">
+                <div className="flex justify-between mb-2">
+                  <p className="text-sm text-slate-600">Performance</p>
+                  <p className="text-sm font-semibold text-indigo-600">
+                    {Math.round((test.bestScore / test.questions) * 100)}%
+                  </p>
+                </div>
+                <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(test.bestScore / test.questions) * 100}%` }}
+                    transition={{ duration: 0.8, delay: 0.2 }}
+                    className="h-full bg-gradient-to-r from-indigo-500 to-purple-500"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Status */}
+            <div className="mb-6">
+              {test.completed ? (
+                <Badge variant="success">Completed</Badge>
+              ) : (
+                <Badge variant="warning">Not Started</Badge>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              {test.completed ? (
+                <>
+                  <Button variant="primary" className="flex-1">
+                    Retake Test
+                  </Button>
+                  <Button variant="secondary">
+                    <Icons.Eye className="w-4 h-4" />
+                  </Button>
+                </>
+              ) : (
+                <Button variant="primary" className="w-full">
+                  Start Test
+                </Button>
+              )}
+            </div>
+          </motion.div>
+        ))}
+      </motion.div>
     </div>
   )
 }
-
-export default MockTests

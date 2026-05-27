@@ -1,177 +1,243 @@
-import { useState, useEffect } from 'react'
-import { toast } from 'react-toastify'
-import { notificationService } from '../services/api'
-import {
-  BellIcon,
-  CheckIcon,
-  EnvelopeOpenIcon,
-  EnvelopeIcon,
-} from '@heroicons/react/24/outline'
+import { motion } from 'framer-motion'
+import * as Icons from 'lucide-react'
+import { Badge } from '../components/Badge'
+import { Button } from '../components/Button'
+import { NOTIFICATIONS } from '../constants/dummyData'
 
-const Notifications = () => {
-  const [notifications, setNotifications] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState('all')
-  const [markingRead, setMarkingRead] = useState(null)
-
-  useEffect(() => {
-    fetchNotifications()
-  }, [])
-
-  const fetchNotifications = async () => {
-    try {
-      const { data } = await notificationService.getMyNotifications()
-      setNotifications(data || [])
-    } catch (error) {
-      toast.error('Failed to load notifications')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleMarkAsRead = async (id) => {
-    setMarkingRead(id)
-    try {
-      await notificationService.markAsRead(id)
-      setNotifications(prev =>
-        prev.map(notif =>
-          notif.id === id ? { ...notif, is_read: true } : notif
-        )
-      )
-      toast.success('Marked as read')
-    } catch (error) {
-      toast.error('Failed to mark as read')
-    } finally {
-      setMarkingRead(null)
-    }
-  }
-
-  const filteredNotifications = notifications.filter(notif => {
-    if (filter === 'unread') return !notif.is_read
-    if (filter === 'read') return notif.is_read
-    return true
-  })
-
-  const getTypeColor = (type) => {
+export const NotificationsPage = () => {
+  const getNotificationIcon = (type) => {
     switch (type) {
       case 'placement':
-        return 'bg-blue-100 text-blue-700 border-blue-300'
+        return 'Briefcase'
       case 'training':
-        return 'bg-green-100 text-green-700 border-green-300'
-      case 'application':
-        return 'bg-purple-100 text-purple-700 border-purple-300'
+        return 'BookOpen'
+      case 'interview':
+        return 'Users'
+      case 'achievement':
+        return 'Trophy'
+      case 'message':
+        return 'MessageSquare'
       default:
-        return 'bg-gray-100 text-gray-700 border-gray-300'
+        return 'Bell'
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    )
+  const getNotificationColor = (type) => {
+    switch (type) {
+      case 'placement':
+        return 'blue'
+      case 'training':
+        return 'purple'
+      case 'interview':
+        return 'yellow'
+      case 'achievement':
+        return 'emerald'
+      case 'message':
+        return 'cyan'
+      default:
+        return 'gray'
+    }
+  }
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.08,
+        delayChildren: 0.2
+      }
+    }
+  }
+
+  const itemVariants = {
+    hidden: { opacity: 0, x: -20 },
+    show: { opacity: 1, x: 0, transition: { duration: 0.3 } }
+  }
+
+  const unreadCount = NOTIFICATIONS.filter(n => !n.read).length
+  const readNotifications = NOTIFICATIONS.filter(n => n.read)
+  const unreadNotifications = NOTIFICATIONS.filter(n => !n.read)
+
+  const IconComponent = ({ name, className = 'w-5 h-5' }) => {
+    const icon = Icons[name]
+    return icon ? icon({ className }) : null
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Notifications</h1>
-        <p className="text-gray-600">Stay updated with your placement journey</p>
-      </div>
-
-      {/* Filter Tabs */}
-      <div className="flex gap-4 mb-8 flex-wrap">
-        {['all', 'unread', 'read'].map(filterType => (
-          <button
-            key={filterType}
-            onClick={() => setFilter(filterType)}
-            className={`px-4 py-2 rounded-lg font-medium transition ${
-              filter === filterType
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            {filterType === 'all' ? 'All' : filterType === 'unread' ? 'Unread' : 'Read'}
-            {filterType === 'unread' && (
-              <span className="ml-2 bg-red-500 text-white px-2 py-0 rounded-full text-xs">
-                {notifications.filter(n => !n.is_read).length}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {/* Notifications List */}
-      {filteredNotifications.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-md p-12 text-center">
-          <BellIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">No notifications</h2>
-          <p className="text-gray-600">
-            {filter === 'unread'
-              ? 'You have no unread notifications'
-              : 'Come back later to see updates'}
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {filteredNotifications.map(notif => (
-            <div
-              key={notif.id}
-              className={`bg-white rounded-xl shadow-md p-6 border-l-4 transition hover:shadow-lg ${
-                notif.is_read ? 'border-l-gray-300 opacity-75' : 'border-l-blue-600'
-              }`}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-8"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-slate-900 mb-2">Notifications</h1>
+            <p className="text-slate-600">Stay updated with placement & training opportunities</p>
+          </div>
+          {unreadCount > 0 && (
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className="px-4 py-2 rounded-full bg-red-500/20 border border-red-500/50 text-red-600 text-sm font-semibold"
             >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  {/* Type Badge */}
-                  {notif.notification?.type && (
-                    <div className="mb-3 inline-block">
-                      <span className={`text-xs font-semibold px-3 py-1 rounded-full border ${getTypeColor(notif.notification.type)}`}>
-                        {notif.notification.type.toUpperCase()}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Title */}
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    {notif.notification?.title}
-                  </h3>
-
-                  {/* Message */}
-                  <p className="text-gray-700 mb-3">
-                    {notif.notification?.message}
-                  </p>
-
-                  {/* Timestamp */}
-                  <p className="text-xs text-gray-500">
-                    {new Date(notif.created_at).toLocaleString()}
-                  </p>
-                </div>
-
-                {/* Action Button */}
-                {!notif.is_read && (
-                  <button
-                    onClick={() => handleMarkAsRead(notif.id)}
-                    disabled={markingRead === notif.id}
-                    className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200 transition whitespace-nowrap disabled:opacity-50"
-                  >
-                    <EnvelopeOpenIcon className="w-4 h-4" />
-                    <span className="text-sm font-medium">Mark read</span>
-                  </button>
-                )}
-
-                {notif.is_read && (
-                  <CheckIcon className="w-5 h-5 text-green-600 mt-1" />
-                )}
-              </div>
-            </div>
-          ))}
+              {unreadCount} New
+            </motion.div>
+          )}
         </div>
+      </motion.div>
+
+      {/* Filter & Action Buttons */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.1 }}
+        className="flex flex-wrap gap-3"
+      >
+        <Button variant="primary" size="sm">All</Button>
+        <Button variant="secondary" size="sm">Placement</Button>
+        <Button variant="secondary" size="sm">Training</Button>
+        <Button variant="secondary" size="sm">Interviews</Button>
+        <div className="ms-auto flex gap-2">
+          <Button variant="outline" size="sm">
+            <Icons.Settings className="w-4 h-4" />
+            Preferences
+          </Button>
+          <Button variant="ghost" size="sm">
+            <Icons.MoreHorizontal className="w-4 h-4" />
+          </Button>
+        </div>
+      </motion.div>
+
+      {/* Unread Notifications */}
+      {unreadNotifications.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="space-y-3"
+        >
+          <h3 className="text-lg font-bold text-slate-900 mb-4">📌 New Notifications</h3>
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="show"
+            className="space-y-3"
+          >
+            {unreadNotifications.map((notif) => (
+              <motion.div
+                key={notif.id}
+                variants={itemVariants}
+                whileHover={{ x: 5 }}
+                className="group rounded-xl border border-indigo-500/30 backdrop-blur-xl bg-gradient-to-r from-indigo-500/15 to-indigo-500/5 hover:border-indigo-500/50 transition-all p-4 cursor-pointer"
+              >
+                <div className="flex items-start gap-4">
+                  {/* Icon */}
+                  <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-indigo-500/20 flex items-center justify-center mt-1">
+                    <IconComponent name={getNotificationIcon(notif.type)} className="w-6 h-6 text-indigo-600" />
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="text-base font-bold text-slate-900">{notif.title}</h4>
+                      <span className="text-xs text-slate-600 flex-shrink-0">{notif.time}</span>
+                    </div>
+                    <p className="text-sm text-slate-600 mt-1">{notif.message}</p>
+                    {notif.actionLink && (
+                      <motion.button
+                        whileHover={{ x: 3 }}
+                        className="text-sm text-indigo-600 hover:text-indigo-700 transition-colors mt-2 flex items-center gap-1"
+                      >
+                        {notif.actionText || 'View'} <Icons.ArrowRight className="w-3 h-3" />
+                      </motion.button>
+                    )}
+                  </div>
+
+                  {/* Close Button */}
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="flex-shrink-0 p-2 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-slate-100 transition-all"
+                  >
+                    <Icons.X className="w-4 h-4 text-slate-600" />
+                  </motion.button>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Read Notifications */}
+      {readNotifications.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="space-y-3"
+        >
+          <h3 className="text-lg font-bold text-slate-900 mb-4">Previous</h3>
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="show"
+            className="space-y-2"
+          >
+            {readNotifications.map((notif) => (
+              <motion.div
+                key={notif.id}
+                variants={itemVariants}
+                whileHover={{ x: 3 }}
+                className="group rounded-xl border border-slate-200 backdrop-blur-xl bg-slate-50 hover:border-indigo-300 hover:bg-slate-100 transition-all p-4 cursor-pointer opacity-75 hover:opacity-100"
+              >
+                <div className="flex items-start gap-4">
+                  {/* Icon */}
+                  <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-slate-200 flex items-center justify-center">
+                    <IconComponent name={getNotificationIcon(notif.type)} className="w-5 h-5 text-slate-600" />
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="text-sm font-semibold text-slate-900">{notif.title}</h4>
+                      <span className="text-xs text-slate-600 flex-shrink-0">{notif.time}</span>
+                    </div>
+                    <p className="text-xs text-slate-600 mt-1 line-clamp-1">{notif.message}</p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Empty State */}
+      {unreadNotifications.length === 0 && readNotifications.length === 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center justify-center py-20 rounded-2xl border border-slate-200 backdrop-blur-xl bg-white"
+        >
+          <motion.div
+            animate={{ y: [0, -10, 0] }}
+            transition={{ duration: 3, repeat: Infinity }}
+            className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4"
+          >
+            <Icons.Bell className="w-8 h-8 text-slate-600" />
+          </motion.div>
+          <h3 className="text-xl font-bold text-slate-900 mb-2">All Caught Up!</h3>
+          <p className="text-slate-600 text-center max-w-md">
+            No notifications right now. Check back later for new opportunities and updates.
+          </p>
+          <Button variant="primary" className="mt-6">
+            <Icons.Settings className="w-4 h-4" />
+            Notification Settings
+          </Button>
+        </motion.div>
       )}
     </div>
   )
 }
-
-export default Notifications

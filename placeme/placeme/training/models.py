@@ -1,145 +1,110 @@
-from django.db import models
-from users.models import User, StudentProfile
+﻿from django.db import models
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 class Course(models.Model):
-    title = models.CharField(max_length=200)
-    description = models.TextField()
-    instructor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='courses_created')
-    category = models.CharField(max_length=100, choices=[
-        ('aptitude', 'Aptitude'),
-        ('technical', 'Technical'),
-        ('soft_skills', 'Soft Skills'),
+    """Training course"""
+    LEVEL_CHOICES = [
+        ('beginner', 'Beginner'),
+        ('intermediate', 'Intermediate'),
+        ('advanced', 'Advanced'),
+    ]
+
+    CATEGORY_CHOICES = [
+        ('dsa', 'Data Structures & Algorithms'),
+        ('web', 'Web Development'),
+        ('ml', 'Machine Learning'),
+        ('cloud', 'Cloud Computing'),
+        ('devops', 'DevOps'),
+        ('database', 'Database'),
         ('other', 'Other'),
-    ])
-    duration_hours = models.IntegerField()
-    capacity = models.IntegerField()
-    start_date = models.DateTimeField()
-    end_date = models.DateTimeField()
+    ]
+
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default='other')
+    level = models.CharField(max_length=20, choices=LEVEL_CHOICES, default='beginner')
+    duration_hours = models.IntegerField(help_text="Duration in hours")
+    instructor_name = models.CharField(max_length=255)
+    instructor_bio = models.TextField(blank=True)
+    thumbnail_url = models.URLField(blank=True, null=True)
+    total_students = models.IntegerField(default=0)
+    rating = models.DecimalField(max_digits=3, decimal_places=1, default=0)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    
-    class Meta:
-        db_table = 'courses'
-        ordering = ['-start_date']
-    
+    updated_at = models.DateTimeField(auto_now=True)
+
     def __str__(self):
         return self.title
+
+    class Meta:
+        ordering = ['-created_at']
 
 
 class Enrollment(models.Model):
-    student = models.ForeignKey(StudentProfile, on_delete=models.CASCADE, related_name='enrollments')
+    """Student enrollment in a course"""
+    STATUS_CHOICES = [
+        ('enrolled', 'Enrolled'),
+        ('in_progress', 'In Progress'),
+        ('completed', 'Completed'),
+        ('dropped', 'Dropped'),
+    ]
+
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='course_enrollments')
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='enrollments')
-    attendance_percentage = models.FloatField(default=0.0)
-    completed = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    
-    class Meta:
-        db_table = 'enrollments'
-        unique_together = ['student', 'course']
-    
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='enrolled')
+    progress_percentage = models.IntegerField(default=0)
+    enrolled_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    certificate_url = models.URLField(blank=True, null=True)
+
     def __str__(self):
-        return f"{self.student.user.username} - {self.course.title}"
+        return f"{self.student.username} - {self.course.title}"
+
+    class Meta:
+        ordering = ['-enrolled_at']
+        unique_together = ('student', 'course')
 
 
 class MockTest(models.Model):
-    CATEGORY_CHOICES = [
-        ('quant', 'Quantitative Aptitude'),
-        ('verbal', 'Verbal Ability'),
-        ('logical', 'Logical Reasoning'),
-        ('technical', 'Technical'),
-        ('coding', 'Coding'),
-    ]
-    
-    title = models.CharField(max_length=200)
-    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
-    description = models.TextField(blank=True)
-    total_questions = models.IntegerField()
-    duration_minutes = models.IntegerField()
-    passing_score = models.IntegerField(default=40)
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='tests_created')
-    created_at = models.DateTimeField(auto_now_add=True)
-    is_active = models.BooleanField(default=True)
-    
-    class Meta:
-        db_table = 'mock_tests'
-        ordering = ['-created_at']
-    
-    def __str__(self):
-        return self.title
-
-
-class Question(models.Model):
+    """Mock test for assessment"""
     DIFFICULTY_CHOICES = [
         ('easy', 'Easy'),
         ('medium', 'Medium'),
         ('hard', 'Hard'),
     ]
-    
-    test = models.ForeignKey(MockTest, on_delete=models.CASCADE, related_name='questions')
-    question_text = models.TextField()
-    difficulty = models.CharField(max_length=20, choices=DIFFICULTY_CHOICES)
-    correct_answer = models.CharField(max_length=500)
-    explanation = models.TextField(blank=True)
-    marks = models.IntegerField(default=1)
-    order = models.IntegerField()
-    
-    class Meta:
-        db_table = 'questions'
-        ordering = ['test', 'order']
-        unique_together = ['test', 'order']
-    
-    def __str__(self):
-        return f"{self.test.title} - Q{self.order}"
 
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='tests', null=True, blank=True)
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    difficulty = models.CharField(max_length=20, choices=DIFFICULTY_CHOICES, default='medium')
+    total_questions = models.IntegerField(default=0)
+    duration_minutes = models.IntegerField(default=60)
+    passing_percentage = models.IntegerField(default=50)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
-class QuestionOption(models.Model):
-    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='options')
-    option_text = models.CharField(max_length=500)
-    is_correct = models.BooleanField(default=False)
-    order = models.IntegerField()
-    
-    class Meta:
-        db_table = 'question_options'
-        ordering = ['question', 'order']
-    
     def __str__(self):
-        return f"{self.question.test.title} - Option {self.order}"
+        return self.title
+
+    class Meta:
+        ordering = ['-created_at']
 
 
 class TestAttempt(models.Model):
-    student = models.ForeignKey(StudentProfile, on_delete=models.CASCADE, related_name='test_attempts')
+    """Student's attempt at a mock test"""
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='test_attempts')
     test = models.ForeignKey(MockTest, on_delete=models.CASCADE, related_name='attempts')
-    score = models.IntegerField()
-    total_marks = models.IntegerField()
-    percentage = models.FloatField()
-    weak_areas = models.TextField(blank=True, help_text="JSON data of weak areas")
-    time_taken_seconds = models.IntegerField()
-    started_at = models.DateTimeField()
-    completed_at = models.DateTimeField()
-    
-    class Meta:
-        db_table = 'test_attempts'
-        ordering = ['-completed_at']
-    
+    score = models.IntegerField(default=0)
+    max_score = models.IntegerField(default=100)
+    attempted_at = models.DateTimeField(auto_now_add=True)
+    time_taken_minutes = models.IntegerField(null=True, blank=True)
+    is_passed = models.BooleanField(default=False)
+
     def __str__(self):
-        return f"{self.student.user.username} - {self.test.title} - {self.percentage}%"
-    
-    @property
-    def passed(self):
-        return self.percentage >= self.test.passing_score
+        return f"{self.student.username} - {self.test.title} ({self.score}/{self.max_score})"
 
-
-class StudentAnswer(models.Model):
-    attempt = models.ForeignKey(TestAttempt, on_delete=models.CASCADE, related_name='answers')
-    question = models.ForeignKey(Question, on_delete=models.CASCADE)
-    selected_option = models.ForeignKey(QuestionOption, on_delete=models.SET_NULL, null=True, blank=True)
-    is_correct = models.BooleanField(default=False)
-    time_taken_seconds = models.IntegerField(default=0)
-    
     class Meta:
-        db_table = 'student_answers'
-        unique_together = ['attempt', 'question']
-    
-    def __str__(self):
-        return f"{self.attempt.student.user.username} - Q{self.question.order}"
-
+        ordering = ['-attempted_at']
+        unique_together = ('student', 'test', 'attempted_at')
