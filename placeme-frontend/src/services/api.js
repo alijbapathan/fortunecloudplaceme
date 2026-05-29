@@ -59,4 +59,55 @@ export const authService = {
     api.get('/users/debug/'),
 }
 
+
+
+
+
+// Recruiter Services
+export const recruiterService = {
+  
+  // Drives
+  getDrives: () =>
+    api.get('/placement/drives/'),
+
+  createDrive: (data) =>
+    api.post('/placement/drives/', data),
+
+  updateDrive: (id, data) =>
+    api.put(`/placement/drives/${id}/`, data),
+
+  deleteDrive: (id) =>
+    api.delete(`/placement/drives/${id}/`),
+
+  // Applications
+  getApplications: () =>
+    api.get('/placement/applications/'),
+
+  updateApplicationStatus: (id, status) =>
+    api.put(`/placement/applications/${id}/`, {
+      status,
+    }),
+
+  // Interviews
+  createInterview: (data) =>
+    api.post('/placement/interview-schedules/', data),
+
+  // Company
+  getCompany: (id) =>
+    api.get(`/users/companies/${id}/`),
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 export default api

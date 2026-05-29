@@ -1,6 +1,7 @@
 {
   "name": "placeme-frontend",
   "version": "1.0.0",
+  "type": "module",
   "description": "PlaceMe - Smart Training & Placement Portal Frontend",
   "private": true,
   "dependencies": {

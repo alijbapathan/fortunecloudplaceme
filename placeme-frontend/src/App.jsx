@@ -2,11 +2,13 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 
-// Pages
+// Public Pages
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import NotFound from './pages/NotFound'
+
+// Student Pages
 import { StudentDashboard } from './pages/StudentDashboard'
 import { Profile } from './pages/Profile'
 import { PlacementDrives } from './pages/PlacementDrives'
@@ -18,10 +20,22 @@ import { NotificationsPage } from './pages/Notifications'
 import { Settings } from './pages/Settings'
 import { Training } from './pages/Training'
 
-// Components & Layouts
-import Navbar from './components/Navbar'
-import PrivateRoute from './components/PrivateRoute'
+// Recruiter Pages
+import RecruiterDashboard from './pages/recruiter/RecruiterDashboard'
+import CreateDrive from './pages/recruiter/CreateDrive'
+import ManageDrives from './pages/recruiter/ManageDrives'
+import ApplicationsList from './pages/recruiter/ApplicationsList'
+import InterviewSchedule from './pages/recruiter/InterviewSchedule'
+import CompanyProfile from './pages/recruiter/CompanyProfile'
+import Analytics from './pages/recruiter/Analytics'
+import ApplicantProfile from './pages/recruiter/ApplicantProfile'
+
+// Layouts
 import { MainLayout } from './layouts/MainLayout'
+import RecruiterLayout from './layouts/RecruiterLayout'
+
+// Components
+import PrivateRoute from './components/PrivateRoute'
 
 function App() {
   // Check localStorage directly for login status
@@ -32,14 +46,39 @@ function App() {
     <Router>
       <div className="min-h-screen bg-slate-50">
         <Routes>
+
           {/* Public Routes */}
           <Route path="/" element={<Home />} />
-          <Route path="/login" element={hasToken ? <Navigate to="/dashboard" /> : <Login />} />
-          <Route path="/register" element={hasToken ? <Navigate to="/dashboard" /> : <Register />} />
+ 
 
-          {/* Protected Routes with MainLayout */}
+          <Route
+            path="/login"
+            element={
+              isAuthenticated ? (
+                <Navigate to="/dashboard" />
+              ) : (
+                <Login />
+              )
+            }
+          />
+
+          <Route
+            path="/register"
+            element={
+              isAuthenticated ? (
+                <Navigate to="/dashboard" />
+              ) : (
+                <Register />
+              )
+            }
+          />
+
+          {/* =========================
+              STUDENT ROUTES
+          ========================= */}
           <Route element={<PrivateRoute />}>
             <Route element={<MainLayout />}>
+<<<<<<< HEAD
               <Route path="/dashboard" element={<StudentDashboard />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/drives" element={<PlacementDrives />} />
@@ -50,16 +89,114 @@ function App() {
               <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/training" element={<Training />} />
+=======
+
+              <Route
+                path="/dashboard"
+                element={<StudentDashboard />}
+              />
+
+              <Route
+                path="/profile"
+                element={<Profile />}
+              />
+
+              <Route
+                path="/drives"
+                element={<PlacementDrives />}
+              />
+
+              <Route
+                path="/applications"
+                element={<Applications />}
+              />
+
+              <Route
+                path="/mock-tests"
+                element={<MockTests />}
+              />
+
+              <Route
+                path="/interviews"
+                element={<InterviewExperience />}
+              />
+
+              <Route
+                path="/resume"
+                element={<ResumeBuilder />}
+              />
+
+              <Route
+                path="/notifications"
+                element={<NotificationsPage />}
+              />
+
+              <Route
+                path="/settings"
+                element={<Settings />}
+              />
+
+            </Route>
+          </Route>
+
+          {/* =========================
+              RECRUITER ROUTES
+          ========================= */}
+          <Route element={<PrivateRoute />}>
+            <Route element={<RecruiterLayout />}>
+
+              <Route
+                path="/recruiter/dashboard"
+                element={<RecruiterDashboard />}
+              />
+
+              <Route
+                path="/recruiter/create-drive"
+                element={<CreateDrive />}
+              />
+
+              <Route
+                path="/recruiter/manage-drives"
+                element={<ManageDrives />}
+              />
+
+              <Route
+                path="/recruiter/applications"
+                element={<ApplicationsList />}
+              />
+
+              <Route
+                path="/recruiter/interviews"
+                element={<InterviewSchedule />}
+              />
+
+              <Route
+                path="/recruiter/company"
+                element={<CompanyProfile />}
+              />
+
+              <Route
+                path="/recruiter/analytics"
+                element={<Analytics />}
+              />
+
+              <Route
+                path="/recruiter/applicant/:id"
+                element={<ApplicantProfile />}
+              />
+
+>>>>>>> 6029b95d (.)
             </Route>
           </Route>
 
           {/* 404 */}
           <Route path="*" element={<NotFound />} />
+
         </Routes>
       </div>
 
-      <ToastContainer 
-        position="bottom-right" 
+      <ToastContainer
+        position="bottom-right"
         autoClose={3000}
         theme="dark"
       />
