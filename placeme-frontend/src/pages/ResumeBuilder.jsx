@@ -1,186 +1,494 @@
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import * as Icons from 'lucide-react'
+
 import { DashboardCard } from '../components/DashboardCard'
 import { Button } from '../components/Button'
-import { Badge } from '../components/Badge'
+
+import { auth } from '../services/apiClient'
 
 export const ResumeBuilder = () => {
-  const resumeSections = [
-    { id: 1, title: 'Personal Information', icon: 'User', status: 'completed', fields: ['Name', 'Email', 'Phone'] },
-    { id: 2, title: 'Education', icon: 'BookOpen', status: 'completed', fields: ['Degree', 'College', 'CGPA'] },
-    { id: 3, title: 'Experience', icon: 'Briefcase', status: 'pending', fields: ['Company', 'Position', 'Duration'] },
-    { id: 4, title: 'Skills', icon: 'Zap', status: 'pending', fields: ['Technical', 'Soft Skills'] },
-    { id: 5, title: 'Projects', icon: 'Code2', status: 'pending', fields: ['Project Name', 'Description', 'Link'] },
-    { id: 6, title: 'Certifications', icon: 'Award', status: 'pending', fields: ['Certification', 'Authority', 'Date'] }
-  ]
+  // ============================================
+  // STATE
+  // ============================================
 
-  const IconComponent = ({ name, className = 'w-5 h-5' }) => {
-    const icon = Icons[name]
-    return icon ? icon({ className }) : null
-  }
+  const [loading, setLoading] =
+    useState(true)
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.2
-      }
+  const [saving, setSaving] =
+    useState(false)
+
+  const [resumeData, setResumeData] =
+    useState({
+      headline: '',
+      summary: '',
+      skills: '',
+      education: '',
+      experience: '',
+      projects: '',
+      linkedin_url: '',
+      github_url: '',
+      portfolio_url: '',
+    })
+
+  // ============================================
+  // FETCH RESUME
+  // ============================================
+
+  useEffect(() => {
+    fetchResume()
+  }, [])
+
+  const fetchResume = async () => {
+    try {
+      setLoading(true)
+
+      const response =
+        await auth.getResume()
+
+      setResumeData({
+        headline:
+          response.data.headline ||
+          '',
+
+        summary:
+          response.data.summary ||
+          '',
+
+        skills:
+          response.data.skills ||
+          '',
+
+        education:
+          response.data.education ||
+          '',
+
+        experience:
+          response.data.experience ||
+          '',
+
+        projects:
+          response.data.projects ||
+          '',
+
+        linkedin_url:
+          response.data.linkedin_url ||
+          '',
+
+        github_url:
+          response.data.github_url ||
+          '',
+
+        portfolio_url:
+          response.data.portfolio_url ||
+          '',
+      })
+
+    } catch (error) {
+      console.error(
+        'Error fetching resume:',
+        error
+      )
+
+    } finally {
+      setLoading(false)
     }
   }
 
-  const itemVariants = {
-    hidden: { opacity: 0, x: -20 },
-    show: { opacity: 1, x: 0, transition: { duration: 0.3 } }
+  // ============================================
+  // HANDLE CHANGE
+  // ============================================
+
+  const handleChange = (e) => {
+    const { name, value } =
+      e.target
+
+    setResumeData((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
+  }
+
+  // ============================================
+  // SAVE RESUME
+  // ============================================
+
+  const handleSaveResume =
+    async () => {
+      try {
+        setSaving(true)
+
+        await auth.updateResume(
+          resumeData
+        )
+
+        alert(
+          'Resume saved successfully 😎🔥'
+        )
+
+      } catch (error) {
+        console.error(
+          'Error saving resume:',
+          error.response?.data ||
+            error
+        )
+
+        alert(
+          'Failed to save resume'
+        )
+
+      } finally {
+        setSaving(false)
+      }
+    }
+
+  // ============================================
+  // CALCULATE COMPLETION
+  // ============================================
+
+  const fields = Object.values(
+    resumeData
+  )
+
+  const completedFields =
+    fields.filter(
+      (field) =>
+        field &&
+        field.trim() !== ''
+    ).length
+
+  const completionPercentage =
+    Math.round(
+      (completedFields /
+        fields.length) *
+        100
+    )
+
+  // ============================================
+  // LOADING
+  // ============================================
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+
+        <div className="text-center">
+
+          <div className="w-12 h-12 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4" />
+
+          <p className="text-slate-600">
+            Loading resume...
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="space-y-8">
-      {/* Header */}
+
+      {/* HEADER */}
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-8"
+        initial={{
+          opacity: 0,
+          y: -20,
+        }}
+        animate={{
+          opacity: 1,
+          y: 0,
+        }}
       >
-        <h1 className="text-4xl font-bold text-slate-900 mb-2">Resume Builder</h1>
-        <p className="text-slate-600">Create an ATS-optimized resume to impress recruiters</p>
+
+        <h1 className="text-4xl font-bold text-slate-900 mb-2">
+
+          Resume Builder
+        </h1>
+
+        <p className="text-slate-600">
+          Build your professional
+          resume for placements
+        </p>
       </motion.div>
 
-      {/* Progress Section */}
+      {/* PROGRESS */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="rounded-2xl border border-slate-200 backdrop-blur-xl bg-white p-6"
+        initial={{
+          opacity: 0,
+          y: 20,
+        }}
+        animate={{
+          opacity: 1,
+          y: 0,
+        }}
+        className="rounded-2xl border border-slate-200 bg-white p-6"
       >
+
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-slate-900">Resume Completion</h3>
-          <span className="text-2xl font-bold text-indigo-600">50%</span>
+
+          <h3 className="text-lg font-bold text-slate-900">
+
+            Resume Completion
+          </h3>
+
+          <span className="text-2xl font-bold text-indigo-600">
+
+            {
+              completionPercentage
+            }
+            %
+          </span>
         </div>
+
         <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden">
+
           <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: '50%' }}
-            transition={{ duration: 0.8, ease: 'easeOut' }}
-            className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"
+            initial={{
+              width: 0,
+            }}
+            animate={{
+              width: `${completionPercentage}%`,
+            }}
+            transition={{
+              duration: 0.8,
+            }}
+            className="h-full bg-gradient-to-r from-indigo-500 to-purple-500"
           />
         </div>
-        <p className="text-sm text-slate-600 mt-3">Complete 3 more sections to unlock recommendations</p>
       </motion.div>
 
-      {/* Sections Grid */}
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="show"
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+      {/* FORM */}
+      <DashboardCard
+        title="Resume Details"
+        icon={Icons.FileText}
       >
-        {resumeSections.map((section) => (
-          <motion.div
-            key={section.id}
-            variants={itemVariants}
-            whileHover={{ scale: 1.02 }}
-            className={`rounded-2xl border backdrop-blur-xl transition-all p-6 cursor-pointer group ${
-              section.status === 'completed'
-                ? 'border-emerald-500/30 bg-emerald-500/10 hover:border-emerald-500/50'
-                : 'border-slate-200 bg-white hover:border-indigo-300'
-            }`}
-          >
-            {/* Icon & Title */}
-            <div className="flex items-start justify-between mb-4">
-              <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                section.status === 'completed'
-                  ? 'bg-emerald-500/20'
-                  : 'bg-slate-100'
-              }`}>
-                <IconComponent name={section.icon} className={`w-6 h-6 ${
-                  section.status === 'completed'
-                    ? 'text-emerald-400'
-                    : 'text-slate-600 group-hover:text-indigo-600 transition-colors'
-                }`} />
-              </div>
-              {section.status === 'completed' && (
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center"
-                >
-                  <Icons.Check className="w-4 h-4 text-white" />
-                </motion.div>
+
+        <div className="space-y-6">
+
+          {/* HEADLINE */}
+          <div>
+
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+
+              Professional Headline
+            </label>
+
+            <input
+              type="text"
+              name="headline"
+              value={
+                resumeData.headline
+              }
+              onChange={
+                handleChange
+              }
+              placeholder="Frontend Developer | MERN Stack | Problem Solver"
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          {/* SUMMARY */}
+          <div>
+
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+
+              Professional Summary
+            </label>
+
+            <textarea
+              rows={4}
+              name="summary"
+              value={
+                resumeData.summary
+              }
+              onChange={
+                handleChange
+              }
+              placeholder="Write a short professional summary..."
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          {/* SKILLS */}
+          <div>
+
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+
+              Skills
+            </label>
+
+            <textarea
+              rows={3}
+              name="skills"
+              value={
+                resumeData.skills
+              }
+              onChange={
+                handleChange
+              }
+              placeholder="React, Django, Python, SQL, JavaScript..."
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          {/* EDUCATION */}
+          <div>
+
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+
+              Education
+            </label>
+
+            <textarea
+              rows={4}
+              name="education"
+              value={
+                resumeData.education
+              }
+              onChange={
+                handleChange
+              }
+              placeholder="Your education details..."
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          {/* EXPERIENCE */}
+          <div>
+
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+
+              Experience
+            </label>
+
+            <textarea
+              rows={4}
+              name="experience"
+              value={
+                resumeData.experience
+              }
+              onChange={
+                handleChange
+              }
+              placeholder="Internships, work experience..."
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          {/* PROJECTS */}
+          <div>
+
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+
+              Projects
+            </label>
+
+            <textarea
+              rows={4}
+              name="projects"
+              value={
+                resumeData.projects
+              }
+              onChange={
+                handleChange
+              }
+              placeholder="Your major projects..."
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          {/* LINKS */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+            <div>
+
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+
+                LinkedIn URL
+              </label>
+
+              <input
+                type="text"
+                name="linkedin_url"
+                value={
+                  resumeData.linkedin_url
+                }
+                onChange={
+                  handleChange
+                }
+                placeholder="https://linkedin.com/..."
+                className="w-full rounded-xl border border-slate-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            <div>
+
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+
+                GitHub URL
+              </label>
+
+              <input
+                type="text"
+                name="github_url"
+                value={
+                  resumeData.github_url
+                }
+                onChange={
+                  handleChange
+                }
+                placeholder="https://github.com/..."
+                className="w-full rounded-xl border border-slate-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            <div>
+
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+
+                Portfolio URL
+              </label>
+
+              <input
+                type="text"
+                name="portfolio_url"
+                value={
+                  resumeData.portfolio_url
+                }
+                onChange={
+                  handleChange
+                }
+                placeholder="https://portfolio.com/..."
+                className="w-full rounded-xl border border-slate-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+          </div>
+
+          {/* BUTTONS */}
+          <div className="flex justify-center pt-4">
+
+            <Button
+              variant="primary"
+              onClick={
+                handleSaveResume
+              }
+              disabled={saving}
+            >
+
+              {saving ? (
+                <>
+                  <Icons.Loader2 className="w-4 h-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Icons.Save className="w-4 h-4" />
+                  Save Resume
+                </>
               )}
-            </div>
-
-            <h3 className="text-lg font-bold text-slate-900 mb-2">{section.title}</h3>
-
-            {/* Fields Preview */}
-            <div className="space-y-2 mb-4">
-              {section.fields.map((field, idx) => (
-                <p key={idx} className="text-xs text-slate-600">
-                  ✓ {field}
-                </p>
-              ))}
-            </div>
-
-            {/* Action Button */}
-            <motion.button
-              whileHover={{ x: 5 }}
-              whileTap={{ scale: 0.95 }}
-              className="w-full py-2 px-4 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-900 transition-all text-sm font-medium flex items-center justify-center gap-2 group"
-            >
-              <span>{section.status === 'completed' ? 'Edit' : 'Complete'}</span>
-              <Icons.ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </motion.button>
-          </motion.div>
-        ))}
-      </motion.div>
-
-      {/* Features Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className="rounded-2xl border border-slate-200 backdrop-blur-xl bg-white p-8"
-      >
-        <h3 className="text-2xl font-bold text-slate-900 mb-6">Resume Features</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[
-            { icon: 'Check', text: 'ATS-Optimized Templates' },
-            { icon: 'FileJson', text: 'One-Click Export' },
-            { icon: 'Zap', text: 'AI Content Suggestions' },
-            { icon: 'Eye', text: 'Live Preview' },
-            { icon: 'Share2', text: 'Easy Sharing' },
-            { icon: 'TrendingUp', text: 'Performance Analytics' }
-          ].map((feature, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 + idx * 0.05 }}
-              className="flex items-center gap-3 p-3 rounded-lg bg-slate-100 hover:bg-slate-200 transition-all"
-            >
-              <IconComponent name={feature.icon} className="w-5 h-5 text-indigo-600" />
-              <span className="text-sm text-slate-900">{feature.text}</span>
-            </motion.div>
-          ))}
+            </Button>
+          </div>
         </div>
-      </motion.div>
-
-      {/* Action Buttons */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        className="flex gap-4 justify-center"
-      >
-        <Button variant="primary">
-          <Icons.Download className="w-4 h-4" />
-          Download Resume
-        </Button>
-        <Button variant="secondary">
-          <Icons.Share2 className="w-4 h-4" />
-          Share Profile
-        </Button>
-      </motion.div>
+      </DashboardCard>
     </div>
   )
 }

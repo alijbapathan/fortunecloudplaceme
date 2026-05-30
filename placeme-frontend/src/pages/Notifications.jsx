@@ -129,10 +129,10 @@ export const NotificationsPage = () => {
     activeFilter === 'all'
       ? notificationsData
       : notificationsData.filter(
-          n =>
-            n.notification_type?.toLowerCase() ===
-            activeFilter
-        )
+        n =>
+          n.notification_type?.toLowerCase() ===
+          activeFilter
+      )
 
   const unreadCount = notificationsData.filter(
     n => !n.is_read
@@ -150,15 +150,23 @@ export const NotificationsPage = () => {
     name,
     className = 'w-5 h-5'
   }) => {
-    const Icon = Icons[name]
+    const Icon =
+      Icons[name]
 
     if (!Icon) {
-      return <Icons.Bell className={className} />
+      return (
+        <Icons.Bell
+          className={className}
+        />
+      )
     }
 
-    return <Icon className={className} />
+    return (
+      <Icon
+        className={className}
+      />
+    )
   }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">

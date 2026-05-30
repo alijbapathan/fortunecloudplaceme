@@ -17,3 +17,62 @@ class User(AbstractUser):
     def __str__(self):
         return f"{self.username} - {self.get_role_display()}"
 
+class Resume(models.Model):
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='resume'
+    )
+
+    headline = models.CharField(
+        max_length=255,
+        blank=True
+    )
+
+    summary = models.TextField(
+        blank=True
+    )
+
+    skills = models.TextField(
+        blank=True,
+        help_text='Comma separated skills'
+    )
+
+    education = models.TextField(
+        blank=True
+    )
+
+    experience = models.TextField(
+        blank=True
+    )
+
+    projects = models.TextField(
+        blank=True
+    )
+
+    linkedin_url = models.URLField(
+        blank=True
+    )
+
+    github_url = models.URLField(
+        blank=True
+    )
+
+    portfolio_url = models.URLField(
+        blank=True
+    )
+
+    resume_score = models.IntegerField(
+        default=0
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    def __str__(self):
+        return f"{self.user.username} Resume"
