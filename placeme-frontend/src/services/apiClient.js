@@ -145,9 +145,9 @@ export const notifications = {
   getMyNotifications: (params) =>
     apiClient.get('/notifications/notifications/', { params }),
   markAsRead: (id) =>
-    apiClient.post(`/notifications/notifications/${id}/mark_as_read/`),
+    apiClient.patch(`/notifications/notifications/${id}/mark_as_read/`),
   markAllAsRead: () =>
-    apiClient.post('/notifications/notifications/mark_all_as_read/'),
+    apiClient.patch('/notifications/notifications/mark_all_as_read/'),
   getUnreadCount: () =>
     apiClient.get('/notifications/notifications/unread_count/'),
   deleteNotification: (id) =>

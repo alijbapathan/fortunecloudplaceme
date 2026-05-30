@@ -67,10 +67,12 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         return Application.objects.filter(student=self.request.user).select_related('drive', 'drive__company')
 
     def get_serializer_class(self):
-        """Use different serializers for list and detail"""
-        if self.action == 'retrieve':
-            return ApplicationDetailSerializer
-        return ApplicationListSerializer
+      """Use different serializers for different actions"""
+
+      if self.action in ['create', 'retrieve', 'update', 'partial_update']:
+        return ApplicationDetailSerializer
+
+      return ApplicationListSerializer
 
     def create(self, request, *args, **kwargs):
         """Create application (apply to drive)"""
@@ -81,7 +83,17 @@ class ApplicationViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         """Auto-assign student to current user"""
-        serializer.save(student=self.request.user)
+        serializer.save()   
+        from notifications.models import Notification
+
+        application = serializer.instance
+
+        Notification.objects.create(
+            user=self.request.user,
+            title='Application Submitted',
+            message=f'You applied for {application.drive.position} at {application.drive.company.name}',
+            
+        )
 
     @action(detail=True, methods=['patch'], permission_classes=[IsAuthenticated])
     def update_status(self, request, pk=None):
