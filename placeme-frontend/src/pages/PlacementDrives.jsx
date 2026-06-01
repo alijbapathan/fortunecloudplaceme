@@ -3,18 +3,38 @@ import * as Icons from 'lucide-react'
 import { Button } from '../components/Button'
 import { Badge } from '../components/Badge'
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { placement } from '../services/apiClient'
 
 export const PlacementDrives = () => {
+  const navigate = useNavigate()
   const [drives, setDrives] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [applyingId, setApplyingId] = useState(null)
+  
+  // Profile completion states
+  const [profileCompletion, setProfileCompletion] = useState(0)
+  const [profileReady, setProfileReady] = useState(false)
+  const [missingFields, setMissingFields] = useState([])
 
   useEffect(() => {
     fetchDrives()
+    checkProfileStatus()
   }, [])
+
+  const checkProfileStatus = async () => {
+    try {
+      const response = await placement.checkProfileStatus()
+      setProfileCompletion(response.data.profile_completion)
+      setProfileReady(response.data.profile_ready)
+      setMissingFields(response.data.missing_fields || [])
+    } catch (err) {
+      console.error('Error checking profile status:', err)
+      setProfileReady(false)
+    }
+  }
 
   const fetchDrives = async () => {
     try {
@@ -39,19 +59,35 @@ export const PlacementDrives = () => {
   }
 
   const handleApply = async (driveId) => {
+    // Check profile completion first
+    if (!profileReady) {
+      alert(`Your profile is ${profileCompletion}% complete.\n\nMissing: ${missingFields.join(', ')}\n\nPlease complete your profile to apply.`)
+      navigate('/profile')
+      return
+    }
+
     try {
       setApplyingId(driveId)
 
-      await placement.createApplication({
+      const response = await placement.createApplication({
         drive_id: driveId
       })
-      alert('Application submitted successfully!')
+      
+      alert('Application submitted successfully! 🎉')
+      // Refresh profile status
+      checkProfileStatus()
 
     } catch (err) {
       console.error('Apply error:', err)
 
-      if (err.response?.data) {
-        alert(JSON.stringify(err.response.data))
+      // Check if error is due to incomplete profile
+      if (err.response?.data?.profile_completion !== undefined) {
+        setProfileCompletion(err.response.data.profile_completion)
+        setMissingFields(err.response.data.missing_fields || [])
+        alert(`Profile is only ${err.response.data.profile_completion}% complete.\n\nMissing: ${err.response.data.missing_fields?.join(', ')}\n\nPlease complete your profile first!`)
+        navigate('/profile')
+      } else if (err.response?.data) {
+        alert(err.response.data.message || JSON.stringify(err.response.data))
       } else {
         alert('Failed to apply')
       }
@@ -97,6 +133,45 @@ export const PlacementDrives = () => {
           Browse and apply to active placement drives
         </p>
       </motion.div>
+
+      {/* Profile Completion Warning */}
+      {!profileReady && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 bg-amber-50 border border-amber-300 rounded-lg text-amber-900"
+        >
+          <div className="flex items-start gap-3">
+            <Icons.AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="font-semibold mb-1">Complete Your Profile to Apply</h4>
+              <p className="text-sm mb-2">Your profile is {profileCompletion}% complete. Missing: {missingFields.join(', ')}</p>
+              <Button 
+                size="sm"
+                variant="secondary"
+                onClick={() => navigate('/profile')}
+              >
+                Complete Profile
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Profile Completion Success */}
+      {profileReady && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 bg-emerald-50 border border-emerald-300 rounded-lg text-emerald-900 flex items-center gap-3"
+        >
+          <Icons.CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+          <div>
+            <h4 className="font-semibold">Profile Complete ✓</h4>
+            <p className="text-sm">You're all set to apply for drives!</p>
+          </div>
+        </motion.div>
+      )}
 
       {/* Search */}
       <motion.div
@@ -285,10 +360,18 @@ export const PlacementDrives = () => {
                 <div className="mt-6 flex gap-3">
                   <button
                     onClick={() => handleApply(drive.id)}
-                    className="flex-1 bg-indigo-600 text-white py-3 rounded-lg"
+                    disabled={!profileReady || applyingId === drive.id}
+                    title={!profileReady ? `Profile ${profileCompletion}% complete. Missing: ${missingFields.join(', ')}` : 'Apply to this drive'}
+                    className={`flex-1 py-3 rounded-lg font-medium transition-all ${
+                      !profileReady
+                        ? 'bg-slate-300 text-slate-600 cursor-not-allowed opacity-60'
+                        : 'bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer'
+                    }`}
                   >
                     {applyingId === drive.id
                       ? 'Applying...'
+                      : !profileReady
+                      ? `${profileCompletion}% Complete`
                       : 'Apply Now'}
                   </button>
                 </div>

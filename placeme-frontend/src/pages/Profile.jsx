@@ -1,96 +1,461 @@
-import { motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
+
+import { motion } from 'framer-motion'
+
 import * as Icons from 'lucide-react'
+
+import { toast } from 'react-toastify'
+
 import { Button } from '../components/Button'
+
 import { Badge } from '../components/Badge'
-import { auth } from '../services/apiClient'
+
+import {
+  auth,
+  career
+} from '../services/apiClient'
+
+const EMPTY_PROJECT_FORM = {
+  title: '',
+  description: '',
+  tech_stack: '',
+  github_url: '',
+  live_url: '',
+  featured: false,
+}
 
 export const Profile = () => {
-  const [user, setUser] = useState(null)
+
+  // ============================================
+  // STATES
+  // ============================================
+
+  const [user, setUser] =
+    useState(null)
+
+  const [profile, setProfile] =
+    useState(null)
+
+  const [projects, setProjects] =
+    useState([])
 
   const [loading, setLoading] =
     useState(true)
 
-  const [showEditModal, setShowEditModal] =
-    useState(false)
-
   const [saving, setSaving] =
     useState(false)
 
-  const [formData, setFormData] =
-    useState({
-      first_name: '',
-      last_name: '',
-      email: '',
-      phone: ''
-    })
+  const [showEditModal,
+    setShowEditModal] =
+      useState(false)
+
+  const [showProjectModal,
+    setShowProjectModal] =
+      useState(false)
+
+  const [editingProjectId,
+    setEditingProjectId] =
+      useState(null)
+
+  const [projectForm, setProjectForm] =
+    useState(EMPTY_PROJECT_FORM)
+
+  const [savingProject, setSavingProject] =
+    useState(false)
 
   // ============================================
-  // FETCH PROFILE
+  // FORM DATA
+  // ============================================
+
+  const [formData, setFormData] =
+    useState({
+
+      headline: '',
+
+      about: '',
+
+      location: '',
+
+      branch: '',
+
+      graduation_year: '',
+
+      cgpa: '',
+
+      backlogs: 0,
+
+      skills: '',
+
+      github_url: '',
+
+      linkedin_url: '',
+
+      portfolio_url: '',
+
+      leetcode_url: '',
+
+      resume: null,
+    })
+
+  const [resumeFile, setResumeFile] =
+    useState(null)
+
+  // ============================================
+  // FETCH DATA
   // ============================================
 
   useEffect(() => {
-    fetchProfile()
+    fetchData()
   }, [])
 
-  const fetchProfile = async () => {
+  const applyProfileData = (
+    profileData
+  ) => {
+    setProfile(profileData)
+
+    setProjects(
+      profileData.projects || []
+    )
+
+    setFormData({
+      headline:
+        profileData.headline || '',
+      about:
+        profileData.about || '',
+      location:
+        profileData.location || '',
+      branch:
+        profileData.branch || '',
+      graduation_year:
+        profileData.graduation_year || '',
+      cgpa:
+        profileData.cgpa || '',
+      backlogs:
+        profileData.backlogs || 0,
+      skills:
+        profileData.skills || '',
+      github_url:
+        profileData.github_url || '',
+      linkedin_url:
+        profileData.linkedin_url || '',
+      portfolio_url:
+        profileData.portfolio_url || '',
+      leetcode_url:
+        profileData.leetcode_url || '',
+      resume:
+        profileData.resume || null,
+    })
+  }
+
+  const refreshProfile = async () => {
+    const profileResponse =
+      await career.getMyProfile()
+
+    applyProfileData(
+      profileResponse.data
+    )
+
+    return profileResponse.data
+  }
+
+  const fetchData = async () => {
+
     try {
+
       setLoading(true)
 
-      const response =
+      const userResponse =
         await auth.getProfile()
 
-      const userData = response.data
+      setUser(
+        userResponse.data
+      )
 
-      setUser(userData)
-
-      setFormData({
-        first_name:
-          userData.first_name || '',
-        last_name:
-          userData.last_name || '',
-        email: userData.email || '',
-        phone: userData.phone || ''
-      })
+      await refreshProfile()
 
     } catch (error) {
+
       console.error(
         'Failed to fetch profile:',
         error
       )
+
+      toast.error(
+        'Failed to load profile'
+      )
+
     } finally {
+
       setLoading(false)
     }
+  }
+
+  // ============================================
+  // PROFILE COMPLETION
+  // ============================================
+
+  const calculateCompletion = () => {
+
+    if (!profile) return 0
+
+    let score = 0
+
+    // Required fields (20 points each)
+    if (profile.branch) score += 20
+
+    if (profile.cgpa) score += 20
+
+    if (profile.skills) score += 20
+
+    // Important fields (10 points each)
+    if (profile.headline) score += 10
+
+    if (profile.about) score += 10
+
+    if (profile.resume) score += 10
+
+    // Optional (bonus)
+    if (projects.length > 0) score += 5
+
+    if (profile.github_url) score += 2
+
+    if (profile.linkedin_url) score += 2
+
+    if (profile.portfolio_url) score += 1
+
+    if (profile.leetcode_url) score += 1
+
+    return Math.min(score, 100)
+  }
+
+  const completion =
+    calculateCompletion()
+
+  const isPlacementReady = () => {
+    return (
+      profile?.branch &&
+      profile?.cgpa &&
+      profile?.skills &&
+      completion >= 70
+    )
   }
 
   // ============================================
   // UPDATE PROFILE
   // ============================================
 
-  const handleUpdateProfile = async (
+  const buildProfilePayload = () => {
+    const payload = {
+      headline: formData.headline || '',
+      about: formData.about || '',
+      location: formData.location || '',
+      branch: formData.branch || '',
+      skills: formData.skills || '',
+      github_url: formData.github_url || '',
+      linkedin_url: formData.linkedin_url || '',
+      portfolio_url: formData.portfolio_url || '',
+      leetcode_url: formData.leetcode_url || '',
+    }
+
+    if (formData.graduation_year) {
+      payload.graduation_year = Number(
+        formData.graduation_year
+      )
+    }
+
+    if (formData.cgpa) {
+      payload.cgpa = formData.cgpa
+    }
+
+    if (
+      formData.backlogs !== '' &&
+      formData.backlogs != null
+    ) {
+      payload.backlogs = Number(
+        formData.backlogs
+      )
+    }
+
+    if (resumeFile) {
+      const multipart = new FormData()
+      Object.entries(payload).forEach(
+        ([key, value]) => {
+          multipart.append(key, value)
+        }
+      )
+      multipart.append(
+        'resume',
+        resumeFile
+      )
+      return multipart
+    }
+
+    return payload
+  }
+
+  const handleUpdateProfile =
+    async (e) => {
+
+      e.preventDefault()
+
+      try {
+
+        setSaving(true)
+
+        await career.updateMyProfile(
+          buildProfilePayload()
+        )
+
+        await refreshProfile()
+
+        setResumeFile(null)
+        setShowEditModal(false)
+
+        toast.success(
+          'Career profile saved'
+        )
+
+      } catch (error) {
+
+        console.error(
+          'Failed to update profile:',
+          error
+        )
+
+        const detail =
+          error.response?.data
+
+        toast.error(
+          detail
+            ? `Could not save profile: ${JSON.stringify(detail)}`
+            : 'Could not save profile. Please try again.'
+        )
+
+      } finally {
+
+        setSaving(false)
+      }
+    }
+
+  // ============================================
+  // PROJECTS
+  // ============================================
+
+  const openAddProject = () => {
+    setEditingProjectId(null)
+    setProjectForm(EMPTY_PROJECT_FORM)
+    setShowProjectModal(true)
+  }
+
+  const openEditProject = (
+    project
+  ) => {
+    setEditingProjectId(project.id)
+    setProjectForm({
+      title: project.title || '',
+      description:
+        project.description || '',
+      tech_stack:
+        project.tech_stack || '',
+      github_url:
+        project.github_url || '',
+      live_url:
+        project.live_url || '',
+      featured: Boolean(
+        project.featured
+      ),
+    })
+    setShowProjectModal(true)
+  }
+
+  const handleSaveProject = async (
     e
   ) => {
     e.preventDefault()
 
     try {
-      setSaving(true)
+      setSavingProject(true)
 
-      const response =
-        await auth.updateProfile(
-          formData
+      const payload = {
+        title: projectForm.title.trim(),
+        description:
+          projectForm.description.trim(),
+        tech_stack:
+          projectForm.tech_stack.trim(),
+        github_url:
+          projectForm.github_url.trim(),
+        live_url:
+          projectForm.live_url.trim(),
+        featured:
+          projectForm.featured,
+      }
+
+      if (editingProjectId) {
+        await career.updateProject(
+          editingProjectId,
+          payload
         )
+        toast.success(
+          'Project updated'
+        )
+      } else {
+        await career.createProject(
+          payload
+        )
+        toast.success(
+          'Project added'
+        )
+      }
 
-      setUser(response.data)
-
-      setShowEditModal(false)
+      await refreshProfile()
+      setShowProjectModal(false)
 
     } catch (error) {
       console.error(
-        'Failed to update profile:',
+        'Failed to save project:',
         error
       )
+
+      const detail =
+        error.response?.data
+
+      toast.error(
+        detail
+          ? `Could not save project: ${JSON.stringify(detail)}`
+          : 'Could not save project'
+      )
     } finally {
-      setSaving(false)
+      setSavingProject(false)
+    }
+  }
+
+  const handleDeleteProject = async (
+    projectId
+  ) => {
+    if (
+      !window.confirm(
+        'Delete this project?'
+      )
+    ) {
+      return
+    }
+
+    try {
+      await career.deleteProject(
+        projectId
+      )
+      await refreshProfile()
+      toast.success(
+        'Project deleted'
+      )
+    } catch (error) {
+      console.error(
+        'Failed to delete project:',
+        error
+      )
+      toast.error(
+        'Could not delete project'
+      )
     }
   }
 
@@ -98,9 +463,10 @@ export const Profile = () => {
   // AVATAR
   // ============================================
 
-  const userAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${
-    user?.username || 'user'
-  }`
+  const userAvatar =
+    `https://api.dicebear.com/7.x/avataaars/svg?seed=${
+      user?.username || 'user'
+    }`
 
   const fullName =
     user?.first_name ||
@@ -111,40 +477,23 @@ export const Profile = () => {
       : user?.username
 
   // ============================================
-  // ROLE COLORS
-  // ============================================
-
-  const getRoleVariant = (role) => {
-    switch (role) {
-      case 'student':
-        return 'primary'
-
-      case 'recruiter':
-        return 'success'
-
-      case 'tpo':
-        return 'warning'
-
-      default:
-        return 'secondary'
-    }
-  }
-
-  // ============================================
   // LOADING
   // ============================================
 
   if (loading) {
+
     return (
-      <div className="flex items-center justify-center py-24">
-        <div className="text-center">
+      <div className="
+        flex items-center justify-center
+        py-24
+      ">
 
-          <div className="w-14 h-14 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4" />
-
-          <p className="text-slate-600 text-lg">
-            Loading profile...
-          </p>
-        </div>
+        <div className="
+          w-14 h-14 border-4
+          border-slate-200
+          border-t-indigo-600
+          rounded-full animate-spin
+        " />
       </div>
     )
   }
@@ -152,277 +501,707 @@ export const Profile = () => {
   return (
     <div className="space-y-8">
 
-      {/* HEADER */}
+      {/* HERO */}
       <motion.div
-        initial={{
-          opacity: 0,
-          y: -20
-        }}
-        animate={{
-          opacity: 1,
-          y: 0
-        }}
-      >
-        <h1 className="text-4xl font-bold text-slate-900 mb-2">
-          My Profile
-        </h1>
 
-        <p className="text-slate-600">
-          Manage your personal
-          information
-        </p>
-      </motion.div>
-
-      {/* PROFILE CARD */}
-      <motion.div
         initial={{
           opacity: 0,
           y: 20
         }}
+
         animate={{
           opacity: 1,
           y: 0
         }}
-        className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-8 shadow-sm"
+
+        className="
+          relative overflow-hidden
+          rounded-3xl
+          bg-gradient-to-br
+          from-indigo-600
+          via-purple-600
+          to-pink-600
+          p-8 text-white
+        "
       >
 
-        {/* BACKGROUND */}
-        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 via-purple-500/5 to-pink-500/5" />
+        {/* GLOW */}
+        <div className="
+          absolute -top-20 -right-20
+          h-72 w-72 rounded-full
+          bg-white/10 blur-3xl
+        " />
 
-        <div className="relative z-10">
+        <div className="
+          relative z-10
+          flex flex-col lg:flex-row
+          gap-8 items-start
+        ">
 
-          <div className="flex flex-col lg:flex-row lg:items-center gap-8">
+          {/* AVATAR */}
+          <div className="relative">
 
-            {/* AVATAR */}
-            <motion.div
-              whileHover={{
-                scale: 1.05
-              }}
-              className="relative"
-            >
+            <img
+              src={userAvatar}
+              alt={fullName}
+              className="
+                w-32 h-32 rounded-full
+                border-4 border-white/30
+                shadow-2xl
+              "
+            />
 
-              <img
-                src={userAvatar}
-                alt={fullName}
-                className="w-32 h-32 rounded-full border-4 border-indigo-500/30 shadow-lg"
-              />
+            <div className="
+              absolute bottom-2 right-2
+              w-6 h-6 rounded-full
+              bg-green-400 border-4
+              border-white
+            " />
+          </div>
 
-              <div className="absolute bottom-2 right-2 w-6 h-6 rounded-full bg-green-500 border-4 border-white" />
-            </motion.div>
+          {/* INFO */}
+          <div className="flex-1">
 
-            {/* INFO */}
-            <div className="flex-1">
+            <div className="
+              flex flex-col lg:flex-row
+              lg:items-start
+              lg:justify-between
+              gap-4
+            ">
 
-              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+              <div>
 
-                <div>
+                <h1 className="
+                  text-5xl font-black
+                ">
+                  {fullName}
+                </h1>
 
-                  <h2 className="text-4xl font-bold text-slate-900">
-                    {fullName}
-                  </h2>
+                <p className="
+                  text-xl text-white/80
+                  mt-3
+                ">
+                  {profile?.headline ||
+                    'Add your professional headline'}
+                </p>
 
-                  <p className="text-slate-600 text-lg mt-2">
-                    @{user?.username}
-                  </p>
+                <div className="
+                  flex flex-wrap gap-3
+                  mt-5
+                ">
 
-                  <div className="flex flex-wrap gap-3 mt-5">
+                  <Badge variant="secondary">
+                    {profile?.branch ||
+                      'Branch'}
+                  </Badge>
 
-                    <Badge
-                      variant={getRoleVariant(
-                        user?.role
-                      )}
-                    >
-                      {user?.role}
-                    </Badge>
+                  <Badge variant="secondary">
+                    CGPA:
+                    {' '}
+                    {profile?.cgpa ||
+                      'N/A'}
+                  </Badge>
 
-                    <Badge variant="secondary">
-                      Active User
-                    </Badge>
-                  </div>
+                  <Badge variant="secondary">
+                    {projects.length}
+                    {' '}
+                    Projects
+                  </Badge>
                 </div>
-
-                <Button
-                  variant="primary"
-                  onClick={() =>
-                    setShowEditModal(
-                      true
-                    )
-                  }
-                >
-                  <Icons.Edit className="w-4 h-4" />
-
-                  Edit Profile
-                </Button>
               </div>
 
-              {/* DETAILS */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  setShowEditModal(true)
+                }
+              >
 
-                <div className="p-5 rounded-2xl border border-slate-200 bg-slate-50">
+                <Icons.Edit className="
+                  w-4 h-4
+                " />
 
-                  <div className="flex items-center gap-3 mb-2">
+                Edit Profile
+              </Button>
+            </div>
 
-                    <Icons.Mail className="w-5 h-5 text-indigo-600" />
+            {/* COMPLETION */}
+            <div className="mt-8">
 
-                    <p className="text-sm text-slate-500">
-                      Email
-                    </p>
+              <div className="
+                flex items-center
+                justify-between mb-3
+              ">
+
+                <p className="
+                  text-sm font-semibold
+                ">
+                  Profile Completion
+                </p>
+
+                <p className="
+                  text-sm font-bold
+                ">
+                  {completion}%
+                </p>
+              </div>
+
+              <div className="
+                h-3 rounded-full
+                bg-white/20 overflow-hidden
+              ">
+
+                <motion.div
+
+                  initial={{
+                    width: 0
+                  }}
+
+                  animate={{
+                    width:
+                      `${completion}%`
+                  }}
+
+                  transition={{
+                    duration: 1
+                  }}
+
+                  className={`h-full rounded-full ${
+                    completion >= 70
+                      ? 'bg-emerald-400'
+                      : 'bg-white'
+                  }`}
+                />
+              </div>
+
+              {/* Status Badge */}
+              <div className="mt-3 flex items-center gap-2">
+                {completion >= 70 ? (
+                  <div className="flex items-center gap-2 text-emerald-600 text-sm font-semibold">
+                    <Icons.CheckCircle2 className="w-4 h-4" />
+                    Ready for Placements
                   </div>
-
-                  <p className="text-slate-900 font-semibold">
-                    {user?.email ||
-                      'Not Provided'}
-                  </p>
-                </div>
-
-                <div className="p-5 rounded-2xl border border-slate-200 bg-slate-50">
-
-                  <div className="flex items-center gap-3 mb-2">
-
-                    <Icons.Phone className="w-5 h-5 text-indigo-600" />
-
-                    <p className="text-sm text-slate-500">
-                      Phone
-                    </p>
+                ) : (
+                  <div className="flex items-center gap-2 text-amber-600 text-sm font-semibold">
+                    <Icons.AlertCircle className="w-4 h-4" />
+                    {70 - completion}% more needed
                   </div>
-
-                  <p className="text-slate-900 font-semibold">
-                    {user?.phone ||
-                      'Not Provided'}
-                  </p>
-                </div>
-
-                <div className="p-5 rounded-2xl border border-slate-200 bg-slate-50">
-
-                  <div className="flex items-center gap-3 mb-2">
-
-                    <Icons.User className="w-5 h-5 text-indigo-600" />
-
-                    <p className="text-sm text-slate-500">
-                      First Name
-                    </p>
-                  </div>
-
-                  <p className="text-slate-900 font-semibold">
-                    {user?.first_name ||
-                      'Not Provided'}
-                  </p>
-                </div>
-
-                <div className="p-5 rounded-2xl border border-slate-200 bg-slate-50">
-
-                  <div className="flex items-center gap-3 mb-2">
-
-                    <Icons.Users className="w-5 h-5 text-indigo-600" />
-
-                    <p className="text-sm text-slate-500">
-                      Last Name
-                    </p>
-                  </div>
-
-                  <p className="text-slate-900 font-semibold">
-                    {user?.last_name ||
-                      'Not Provided'}
-                  </p>
-                </div>
+                )}
               </div>
             </div>
           </div>
         </div>
       </motion.div>
 
-      {/* QUICK STATS */}
-      <motion.div
-        initial={{
-          opacity: 0
-        }}
-        animate={{
-          opacity: 1
-        }}
-        className="grid grid-cols-1 md:grid-cols-3 gap-6"
-      >
+      {/* MAIN GRID */}
+      <div className="
+        grid grid-cols-1 lg:grid-cols-3
+        gap-8
+      ">
 
-        <div className="p-6 rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-white">
+        {/* LEFT */}
+        <div className="
+          lg:col-span-2 space-y-8
+        ">
 
-          <div className="flex items-center justify-between mb-4">
+          {/* ABOUT */}
+          <div className="
+            rounded-3xl border
+            border-slate-200
+            bg-white p-8
+          ">
 
-            <Icons.Briefcase className="w-8 h-8 text-indigo-600" />
+            <div className="
+              flex items-center gap-3
+              mb-6
+            ">
 
-            <Badge variant="primary">
-              Profile
-            </Badge>
+              <Icons.User className="
+                w-6 h-6 text-indigo-600
+              " />
+
+              <h2 className="
+                text-2xl font-bold
+              ">
+                About
+              </h2>
+            </div>
+
+            <p className="
+              text-slate-600 leading-relaxed
+            ">
+              {profile?.about ||
+                'Add your bio and career interests'}
+            </p>
           </div>
 
-          <h3 className="text-2xl font-bold text-slate-900">
-            Student
-          </h3>
+          {/* PROJECTS */}
+          <div className="
+            rounded-3xl border
+            border-slate-200
+            bg-white p-8
+          ">
 
-          <p className="text-slate-600 text-sm mt-1">
-            Placement Portal User
-          </p>
+            <div className="
+              flex items-center
+              justify-between mb-6
+            ">
+
+              <div className="
+                flex items-center gap-3
+              ">
+
+                <Icons.Code2 className="
+                  w-6 h-6 text-indigo-600
+                " />
+
+                <h2 className="
+                  text-2xl font-bold
+                ">
+                  Projects
+                </h2>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Badge variant="primary">
+                  {projects.length}
+                </Badge>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={openAddProject}
+                >
+                  <Icons.Plus className="w-4 h-4" />
+                  Add Project
+                </Button>
+              </div>
+            </div>
+
+            <div className="
+              space-y-5
+            ">
+
+              {projects.length > 0 ? (
+
+                projects.map((project) => (
+
+                  <motion.div
+
+                    key={project.id}
+
+                    whileHover={{
+                      y: -3
+                    }}
+
+                    className="
+                      rounded-2xl border
+                      border-slate-200
+                      p-5 hover:shadow-lg
+                      transition-all
+                    "
+                  >
+
+                    <div className="
+                      flex items-start
+                      justify-between gap-4
+                    ">
+
+                      <div>
+
+                        <h3 className="
+                          text-xl font-bold
+                          text-slate-900
+                        ">
+                          {project.title}
+                        </h3>
+
+                        <p className="
+                          text-slate-600 mt-2
+                        ">
+                          {project.description}
+                        </p>
+
+                        <div className="
+                          flex flex-wrap gap-2
+                          mt-4
+                        ">
+
+                          {project.tech_stack
+                            ?.split(',')
+                            .map((tech, idx) => (
+
+                              <Badge
+                                key={idx}
+                                variant="secondary"
+                              >
+                                {tech.trim()}
+                              </Badge>
+                            ))}
+                        </div>
+                      </div>
+
+                      <div className="
+                        flex items-center gap-2
+                      ">
+
+                        {project.featured && (
+                          <Badge variant="primary">
+                            Featured
+                          </Badge>
+                        )}
+
+                        {project.github_url && (
+                          <a
+                            href={
+                              project.github_url
+                            }
+                            target="_blank"
+                            rel="noreferrer"
+                            className="
+                              p-2 rounded-lg
+                              hover:bg-slate-100
+                            "
+                          >
+                            <Icons.GitBranch className="
+                              w-5 h-5
+                              text-slate-600
+                            " />
+                          </a>
+                        )}
+
+                        {project.live_url && (
+                          <a
+                            href={
+                              project.live_url
+                            }
+                            target="_blank"
+                            rel="noreferrer"
+                            className="
+                              p-2 rounded-lg
+                              hover:bg-slate-100
+                            "
+                          >
+                            <Icons.ExternalLink className="
+                              w-5 h-5
+                              text-slate-600
+                            " />
+                          </a>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            openEditProject(
+                              project
+                            )
+                          }
+                          className="
+                            p-2 rounded-lg
+                            hover:bg-indigo-50
+                            text-indigo-600
+                          "
+                          aria-label="Edit project"
+                        >
+                          <Icons.Edit className="w-5 h-5" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleDeleteProject(
+                              project.id
+                            )
+                          }
+                          className="
+                            p-2 rounded-lg
+                            hover:bg-red-50
+                            text-red-600
+                          "
+                          aria-label="Delete project"
+                        >
+                          <Icons.Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))
+
+              ) : (
+
+                <div className="
+                  text-center py-10
+                ">
+                  <p className="text-slate-500 mb-4">
+                    No projects added yet
+                  </p>
+                  <Button
+                    variant="primary"
+                    onClick={openAddProject}
+                  >
+                    <Icons.Plus className="w-4 h-4" />
+                    Add your first project
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
-        <div className="p-6 rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white">
+        {/* RIGHT */}
+        <div className="
+          space-y-8
+        ">
 
-          <div className="flex items-center justify-between mb-4">
+          {/* SKILLS */}
+          <div className="
+            rounded-3xl border
+            border-slate-200
+            bg-white p-8
+          ">
 
-            <Icons.CheckCircle2 className="w-8 h-8 text-emerald-600" />
+            <div className="
+              flex items-center gap-3
+              mb-6
+            ">
 
-            <Badge variant="success">
-              Verified
-            </Badge>
+              <Icons.Sparkles className="
+                w-6 h-6 text-indigo-600
+              " />
+
+              <h2 className="
+                text-2xl font-bold
+              ">
+                Skills
+              </h2>
+            </div>
+
+            <div className="
+              flex flex-wrap gap-3
+            ">
+
+              {profile?.skills ? (
+
+                profile.skills
+                  .split(',')
+                  .map((skill, idx) => (
+
+                    <Badge
+                      key={idx}
+                      variant="primary"
+                    >
+                      {skill.trim()}
+                    </Badge>
+                  ))
+
+              ) : (
+
+                <p className="
+                  text-slate-500
+                ">
+                  No skills added
+                </p>
+              )}
+            </div>
           </div>
 
-          <h3 className="text-2xl font-bold text-slate-900">
-            Active
-          </h3>
+          {/* LINKS */}
+          <div className="
+            rounded-3xl border
+            border-slate-200
+            bg-white p-8
+          ">
 
-          <p className="text-slate-600 text-sm mt-1">
-            Account Status
-          </p>
-        </div>
+            <div className="
+              flex items-center gap-3
+              mb-6
+            ">
 
-        <div className="p-6 rounded-2xl border border-purple-200 bg-gradient-to-br from-purple-50 to-white">
+              <Icons.Link className="
+                w-6 h-6 text-indigo-600
+              " />
 
-          <div className="flex items-center justify-between mb-4">
+              <h2 className="
+                text-2xl font-bold
+              ">
+                Social Links
+              </h2>
+            </div>
 
-            <Icons.Calendar className="w-8 h-8 text-purple-600" />
+            <div className="
+              space-y-4
+            ">
 
-            <Badge variant="secondary">
-              Joined
-            </Badge>
+              {profile?.github_url && (
+                <a
+                  href={
+                    profile.github_url
+                  }
+                  target="_blank"
+                  rel="noreferrer"
+                  className="
+                    flex items-center gap-3
+                    text-slate-700
+                    hover:text-indigo-600
+                  "
+                >
+
+                  <Icons.GitBranch className="
+                    w-5 h-5
+                  " />
+
+                  GitHub
+                </a>
+              )}
+
+              {profile?.linkedin_url && (
+                <a
+                  href={
+                    profile.linkedin_url
+                  }
+                  target="_blank"
+                  rel="noreferrer"
+                  className="
+                    flex items-center gap-3
+                    text-slate-700
+                    hover:text-indigo-600
+                  "
+                >
+
+                  <Icons.Link className="
+                    w-5 h-5
+                  " />
+
+                  LinkedIn
+                </a>
+              )}
+
+              {profile?.portfolio_url && (
+                <a
+                  href={
+                    profile.portfolio_url
+                  }
+                  target="_blank"
+                  rel="noreferrer"
+                  className="
+                    flex items-center gap-3
+                    text-slate-700
+                    hover:text-indigo-600
+                  "
+                >
+
+                  <Icons.Globe className="
+                    w-5 h-5
+                  " />
+
+                  Portfolio
+                </a>
+              )}
+
+              {profile?.leetcode_url && (
+                <a
+                  href={
+                    profile.leetcode_url
+                  }
+                  target="_blank"
+                  rel="noreferrer"
+                  className="
+                    flex items-center gap-3
+                    text-slate-700
+                    hover:text-indigo-600
+                  "
+                >
+
+                  <Icons.Code className="
+                    w-5 h-5
+                  " />
+
+                  LeetCode
+                </a>
+              )}
+            </div>
           </div>
 
-          <h3 className="text-2xl font-bold text-slate-900">
-            2026
-          </h3>
+          {/* READINESS */}
+          <div className="
+            rounded-3xl border
+            border-indigo-200
+            bg-gradient-to-br
+            from-indigo-50
+            to-purple-50
+            p-8
+          ">
 
-          <p className="text-slate-600 text-sm mt-1">
-            Platform Member
-          </p>
+            <div className="
+              flex items-center gap-3
+              mb-5
+            ">
+
+              <Icons.Zap className="
+                w-6 h-6 text-indigo-600
+              " />
+
+              <h2 className="
+                text-2xl font-bold
+              ">
+                Placement Readiness
+              </h2>
+            </div>
+
+            <div className="
+              text-5xl font-black
+              text-indigo-600
+            ">
+              {completion}%
+            </div>
+
+            <p className="
+              text-slate-600 mt-3
+            ">
+              Complete your profile
+              to unlock better placement
+              recommendations.
+            </p>
+          </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* EDIT MODAL */}
       {showEditModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
 
-          <div className="w-full max-w-xl rounded-3xl bg-white p-8">
+        <div className="
+          fixed inset-0 z-50
+          flex items-center justify-center
+          bg-black/50 p-4
+        ">
 
-            <div className="flex items-center justify-between mb-6">
+          <div className="
+            w-full max-w-3xl
+            rounded-3xl bg-white
+            p-8 max-h-[90vh]
+            overflow-y-auto
+          ">
 
-              <h2 className="text-3xl font-bold text-slate-900">
-                Edit Profile
+            <div className="
+              flex items-center
+              justify-between mb-8
+            ">
+
+              <h2 className="
+                text-3xl font-bold
+              ">
+                Edit Career Profile
               </h2>
 
               <button
                 onClick={() =>
-                  setShowEditModal(
-                    false
-                  )
+                  setShowEditModal(false)
                 }
               >
-                <Icons.X className="w-6 h-6 text-slate-600" />
+
+                <Icons.X className="
+                  w-6 h-6
+                " />
               </button>
             </div>
 
@@ -430,106 +1209,309 @@ export const Profile = () => {
               onSubmit={
                 handleUpdateProfile
               }
-              className="space-y-5"
+              className="
+                space-y-5
+              "
             >
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  First Name
-                </label>
+              <input
+                type="text"
+                placeholder="Professional Headline"
+                value={formData.headline}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    headline:
+                      e.target.value
+                  })
+                }
+                className="
+                  w-full p-4 rounded-2xl
+                  border border-slate-300
+                "
+              />
+
+              <textarea
+                rows={4}
+                placeholder="About You"
+                value={formData.about}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    about:
+                      e.target.value
+                  })
+                }
+                className="
+                  w-full p-4 rounded-2xl
+                  border border-slate-300
+                "
+              />
+
+              <div className="
+                grid grid-cols-1
+                md:grid-cols-2 gap-4
+              ">
+
+                <div>
+                  <label className="
+                    block text-sm font-semibold
+                    text-slate-700 mb-2
+                  ">
+                    Branch <span className="
+                      text-red-500
+                    ">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="CSE, IT, ECE, etc."
+                    value={formData.branch}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        branch:
+                          e.target.value
+                      })
+                    }
+                    required
+                    className="
+                      w-full p-4 rounded-2xl
+                      border border-slate-300
+                      focus:border-indigo-500
+                      focus:outline-none
+                    "
+                  />
+                </div>
 
                 <input
-                  type="text"
+                  type="number"
+                  placeholder="Graduation Year"
                   value={
-                    formData.first_name
+                    formData.graduation_year
                   }
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      first_name:
-                        e.target
-                          .value
+                      graduation_year:
+                        e.target.value
                     })
                   }
-                  className="w-full p-3 rounded-xl border border-slate-300"
+                  className="
+                    w-full p-4 rounded-2xl
+                    border border-slate-300
+                  "
+                />
+
+                <div>
+                  <label className="
+                    block text-sm font-semibold
+                    text-slate-700 mb-2
+                  ">
+                    CGPA <span className="
+                      text-red-500
+                    ">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g., 8.5"
+                    value={formData.cgpa}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        cgpa:
+                          e.target.value
+                      })
+                    }
+                    required
+                    className="
+                      w-full p-4 rounded-2xl
+                      border border-slate-300
+                      focus:border-indigo-500
+                      focus:outline-none
+                    "
+                  />
+                </div>
+
+                <input
+                  type="number"
+                  placeholder="Backlogs"
+                  value={
+                    formData.backlogs
+                  }
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      backlogs:
+                        e.target.value
+                    })
+                  }
+                  className="
+                    w-full p-4 rounded-2xl
+                    border border-slate-300
+                  "
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Last Name
+                <label className="
+                  block text-sm font-semibold
+                  text-slate-700 mb-2
+                ">
+                  Skills <span className="
+                    text-red-500
+                  ">*</span>
                 </label>
-
-                <input
-                  type="text"
-                  value={
-                    formData.last_name
-                  }
+                <textarea
+                  rows={3}
+                  placeholder="React, Django, SQL (comma-separated)"
+                  value={formData.skills}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      last_name:
-                        e.target
-                          .value
+                      skills:
+                        e.target.value
                     })
                   }
-                  className="w-full p-3 rounded-xl border border-slate-300"
+                  required
+                  className="
+                    w-full p-4 rounded-2xl
+                    border border-slate-300
+                    focus:border-indigo-500
+                    focus:outline-none
+                  "
                 />
               </div>
 
+              <input
+                type="url"
+                placeholder="GitHub URL"
+                value={
+                  formData.github_url
+                }
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    github_url:
+                      e.target.value
+                  })
+                }
+                className="
+                  w-full p-4 rounded-2xl
+                  border border-slate-300
+                "
+              />
+
+              <input
+                type="url"
+                placeholder="LinkedIn URL"
+                value={
+                  formData.linkedin_url
+                }
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    linkedin_url:
+                      e.target.value
+                  })
+                }
+                className="
+                  w-full p-4 rounded-2xl
+                  border border-slate-300
+                "
+              />
+
+              <input
+                type="url"
+                placeholder="Portfolio URL"
+                value={
+                  formData.portfolio_url
+                }
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    portfolio_url:
+                      e.target.value
+                  })
+                }
+                className="
+                  w-full p-4 rounded-2xl
+                  border border-slate-300
+                "
+              />
+
+              <input
+                type="url"
+                placeholder="LeetCode URL"
+                value={
+                  formData.leetcode_url
+                }
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    leetcode_url:
+                      e.target.value
+                  })
+                }
+                className="
+                  w-full p-4 rounded-2xl
+                  border border-slate-300
+                "
+              />
+
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Email
+                <label className="
+                  block text-sm font-semibold
+                  text-slate-700 mb-2
+                ">
+                  Resume <span className="
+                    text-red-500
+                  ">*</span>
                 </label>
-
                 <input
-                  type="email"
-                  value={
-                    formData.email
-                  }
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      email:
-                        e.target
-                          .value
-                    })
-                  }
-                  className="w-full p-3 rounded-xl border border-slate-300"
+                  type="file"
+                  accept=".pdf,.doc,.docx"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      setResumeFile(file)
+                      // Show file name
+                      setFormData({
+                        ...formData,
+                        resume: file.name
+                      })
+                    }
+                  }}
+                  className="
+                    w-full p-4 rounded-2xl
+                    border border-slate-300
+                    focus:border-indigo-500
+                    focus:outline-none
+                  "
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Phone
-                </label>
-
-                <input
-                  type="text"
-                  value={
-                    formData.phone
-                  }
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      phone:
-                        e.target
-                          .value
-                    })
-                  }
-                  className="w-full p-3 rounded-xl border border-slate-300"
-                />
+                {formData.resume && (
+                  <p className="
+                    text-sm text-slate-600 mt-2
+                  ">
+                    📄 {typeof formData.resume === 'string' ? formData.resume : formData.resume?.name}
+                  </p>
+                )}
+                <p className="
+                  text-xs text-slate-500 mt-1
+                ">
+                  Accepted formats: PDF, DOC, DOCX
+                </p>
               </div>
 
               <Button
                 type="submit"
                 variant="primary"
                 className="w-full"
-                disabled={saving}
+                disabled={saving || !formData.branch || !formData.cgpa || !formData.skills}
               >
+
                 {saving
                   ? 'Saving...'
-                  : 'Save Changes'}
+                  : 'Save Career Profile'}
               </Button>
             </form>
           </div>

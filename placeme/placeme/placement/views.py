@@ -45,13 +45,34 @@ class DriveViewSet(viewsets.ReadOnlyModelViewSet):
         student = request.user
         application = Application.objects.filter(drive=drive, student=student).first()
         
+        # Also check profile completion
+        try:
+            student_profile = student.student_profile
+            student_profile.update_completion()
+            profile_ready = student_profile.is_placement_ready()
+            completion = student_profile.profile_completion
+            missing = student_profile.get_missing_fields() if not profile_ready else []
+        except:
+            profile_ready = False
+            completion = 0
+            missing = ['Branch', 'CGPA', 'Skills', 'Headline', 'About', 'Resume']
+        
         if application:
             return Response({
                 'applied': True,
                 'status': application.status,
-                'application_id': application.id
+                'application_id': application.id,
+                'profile_ready': profile_ready,
+                'profile_completion': completion,
+                'missing_fields': missing
             })
-        return Response({'applied': False})
+        
+        return Response({
+            'applied': False,
+            'profile_ready': profile_ready,
+            'profile_completion': completion,
+            'missing_fields': missing
+        })
 
 
 class ApplicationViewSet(viewsets.ModelViewSet):
@@ -76,6 +97,43 @@ class ApplicationViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         """Create application (apply to drive)"""
+        
+        # ========================================
+        # VALIDATE PROFILE COMPLETION
+        # ========================================
+        
+        try:
+            student_profile = request.user.student_profile
+        except:
+            return Response(
+                {
+                    'error': 'Profile not found. Please complete your profile first.',
+                    'profile_completion': 0,
+                    'missing_fields': ['Branch', 'CGPA', 'Skills', 'Headline', 'About', 'Resume']
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Update completion percentage
+        student_profile.update_completion()
+        
+        # Check if profile is ready
+        if not student_profile.is_placement_ready():
+            missing = student_profile.get_missing_fields()
+            completion = student_profile.profile_completion
+            
+            return Response(
+                {
+                    'error': f'Profile is {completion}% complete. Complete your profile to apply for drives.',
+                    'profile_completion': completion,
+                    'required_completion': 70,
+                    'missing_fields': missing,
+                    'message': 'Please complete the following fields to apply: ' + ', '.join(missing)
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Proceed with application creation
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -113,8 +171,32 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(application)
         return Response(serializer.data)
 
-    @action(detail=True, methods=['patch'], permission_classes=[IsAuthenticated])
-    def upload_resume(self, request, pk=None):
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def check_profile_status(self, request):
+        """Check if student profile is ready for placement applications"""
+        
+        try:
+            student_profile = request.user.student_profile
+            student_profile.update_completion()
+            
+            return Response({
+                'profile_ready': student_profile.is_placement_ready(),
+                'profile_completion': student_profile.profile_completion,
+                'missing_fields': student_profile.get_missing_fields(),
+                'required_completion': 70,
+                'is_placement_ready': student_profile.is_placement_ready()
+            }, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            print(f"Error checking profile status: {e}")
+            return Response({
+                'profile_ready': False,
+                'profile_completion': 0,
+                'missing_fields': ['Profile not found'],
+                'required_completion': 70,
+                'is_placement_ready': False,
+                'error': str(e)
+            }, status=status.HTTP_200_OK)
         """Upload/update resume for application"""
         application = self.get_object()
         resume_url = request.data.get('resume_url')

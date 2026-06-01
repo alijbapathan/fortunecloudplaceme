@@ -30,6 +30,10 @@ apiClient.interceptors.request.use(
         `Bearer ${token}`
     }
 
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type']
+    }
+
     return config
   },
 
@@ -190,6 +194,11 @@ export const placement = {
         resume_url:
           resumeUrl,
       }
+    ),
+
+  checkProfileStatus: () =>
+    apiClient.get(
+      '/placement/applications/check_profile_status/'
     ),
 }
 
@@ -465,5 +474,68 @@ export const auth = {
     apiClient.put(
       '/users/resume/',
       data
+    ),
+}
+// ============================================
+// CAREER PROFILE API SERVICES
+// ============================================
+
+export const career = {
+
+  // ========================================
+  // PROFILE
+  // ========================================
+
+  getMyProfile: () =>
+    apiClient.get(
+      '/career/profiles/me/'
+    ),
+
+  updateMyProfile: (
+    data
+  ) =>
+    apiClient.put(
+      '/career/profiles/me/',
+      data
+    ),
+
+  // ========================================
+  // PROJECTS
+  // ========================================
+
+  getProjects: () =>
+    apiClient.get(
+      '/career/projects/'
+    ),
+
+  getProjectById: (
+    id
+  ) =>
+    apiClient.get(
+      `/career/projects/${id}/`
+    ),
+
+  createProject: (
+    data
+  ) =>
+    apiClient.post(
+      '/career/projects/',
+      data
+    ),
+
+  updateProject: (
+    id,
+    data
+  ) =>
+    apiClient.patch(
+      `/career/projects/${id}/`,
+      data
+    ),
+
+  deleteProject: (
+    id
+  ) =>
+    apiClient.delete(
+      `/career/projects/${id}/`
     ),
 }
