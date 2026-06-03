@@ -90,9 +90,10 @@ export const recruiterService = {
     api.get('/placement/applications/'),
 
   updateApplicationStatus: (id, status) =>
-    api.put(`/placement/applications/${id}/`, {
-      status,
-    }),
+  api.patch(
+    `/placement/applications/${id}/`,
+    { status }
+  ),
 
   // Interviews
   createInterview: (data) =>

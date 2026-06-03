@@ -44,18 +44,20 @@ class CompanySerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at'
         ]
-
 class DriveSerializer(serializers.ModelSerializer):
-    """Serializer for Drive model"""
-
     company = CompanySerializer(read_only=True)
-    company_id = serializers.IntegerField(write_only=True, required=False)
+
+    company_id = serializers.IntegerField(
+        write_only=True,
+        required=False
+    )
 
     days_left = serializers.SerializerMethodField()
     total_applications = serializers.SerializerMethodField()
 
     class Meta:
         model = Drive
+
         fields = [
             'id',
             'company',
@@ -91,21 +93,47 @@ class DriveSerializer(serializers.ModelSerializer):
         return obj.applications.count()
 
     def create(self, validated_data):
-        company_id = validated_data.pop('company_id', None)
+
+        company_id = validated_data.pop(
+            'company_id',
+            None
+        )
 
         if company_id:
+
             try:
-                company = Company.objects.get(id=company_id)
+                company = Company.objects.get(
+                    id=company_id
+                )
+
                 validated_data['company'] = company
 
             except Company.DoesNotExist:
+
                 raise serializers.ValidationError({
-                    'company_id': 'Company not found'
+                    'company_id':
+                    'Company not found'
                 })
 
-        return super().create(validated_data)
+        return super().create(
+            validated_data
+        )
 
+    def update(
+        self,
+        instance,
+        validated_data
+    ):
 
+        validated_data.pop(
+            'company_id',
+            None
+        )
+
+        return super().update(
+            instance,
+            validated_data
+        )
 class ApplicationListSerializer(serializers.ModelSerializer):
     """Serializer for listing applications"""
 

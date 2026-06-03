@@ -30,9 +30,10 @@ class UserSerializer(serializers.ModelSerializer):
         ]
     def get_company_name(self, obj):
 
-        if hasattr(obj, 'company'):
-            return obj.company.name
+     try:
+        return obj.company.name
 
+     except Company.DoesNotExist:
         return None
 
         # read_only_fields = ['id']
@@ -60,6 +61,7 @@ class UserRegistrationSerializer(
         required=False,
         allow_blank=True
     )
+
 
     company_website = serializers.URLField(
         required=False,

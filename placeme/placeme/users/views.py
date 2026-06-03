@@ -58,35 +58,34 @@ class UserViewSet(
     )
     def register(self, request):
 
-        serializer = (
-            UserRegistrationSerializer(
-                data=request.data
-            )
-        )
+     serializer = UserRegistrationSerializer(
+        data=request.data
+    )
 
-        if serializer.is_valid():
+     if serializer.is_valid():
 
-            user = serializer.save()
-
-            return Response(
-                {
-                    "message":
-                        "User registered successfully",
-
-                    "user":
-                        UserSerializer(
-                            user
-                        ).data
-                },
-
-                status=status.HTTP_201_CREATED
-            )
+        user = serializer.save()
 
         return Response(
-            serializer.errors,
+            {
+                "message":
+                    "User registered successfully",
 
-            status=status.HTTP_400_BAD_REQUEST
+                "user":
+                    UserSerializer(user).data
+            },
+            status=status.HTTP_201_CREATED
         )
+
+     print(
+        "REGISTER ERRORS:",
+         serializer.errors
+    )
+
+     return Response(
+        serializer.errors,
+        status=status.HTTP_400_BAD_REQUEST
+    )
 
     # ========================================
     # CURRENT USER + UPDATE PROFILE
@@ -304,3 +303,5 @@ class UserViewSet(
 
             status=status.HTTP_400_BAD_REQUEST
         )
+    
+ 

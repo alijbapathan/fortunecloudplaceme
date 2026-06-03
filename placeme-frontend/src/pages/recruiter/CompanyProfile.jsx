@@ -72,11 +72,19 @@ setCompany({
 
     } catch (error) {
 
-      console.error(error)
+  console.error(error)
 
-      toast.error(
-        'Failed to load company profile'
-      )
+  console.log(
+    'UPDATE ERROR:',
+    error.response?.data
+  )
+
+  toast.error(
+    JSON.stringify(
+      error.response?.data
+    )
+  )
+
 
     } finally {
 

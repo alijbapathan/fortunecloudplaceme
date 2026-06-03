@@ -4,6 +4,36 @@ import { toast } from 'react-toastify'
 import { recruiterService } from '../../services/api'
 
 export default function InterviewSchedule() {
+   
+  
+  const updateInterviewStatus = async (
+  id,
+  status
+) => {
+
+  try {
+
+    await recruiterService.updateInterviewStatus(
+      id,
+      status
+    )
+
+    toast.success(
+      `Interview marked as ${status}`
+    )
+
+    fetchInterviews()
+
+  } catch (error) {
+
+    console.error(error)
+
+    toast.error(
+      'Failed to update interview'
+    )
+  }
+}
+
 
   const [interviews, setInterviews] = useState([])
   const [loading, setLoading] = useState(true)
@@ -344,16 +374,27 @@ export default function InterviewSchedule() {
               <div className="flex gap-3 mt-5">
 
                 <button
-                  className="px-4 py-2 bg-green-100 text-green-700 rounded-xl"
-                >
-                  Passed
-                </button>
-
-                <button
-                  className="px-4 py-2 bg-red-100 text-red-700 rounded-xl"
-                >
-                  Failed
-                </button>
+  onClick={() =>
+    updateInterviewStatus(
+      item.id,
+      'passed'
+    )
+  }
+  className="px-4 py-2 bg-green-100 text-green-700 rounded-xl"
+>
+  Passed
+</button>
+<button
+  onClick={() =>
+    updateInterviewStatus(
+      item.id,
+      'failed'
+    )
+  }
+  className="px-4 py-2 bg-red-100 text-red-700 rounded-xl"
+>
+  Failed
+</button>
 
                 <button
                   onClick={() =>

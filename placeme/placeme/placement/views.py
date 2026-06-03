@@ -23,7 +23,8 @@ class CompanyViewSet(viewsets.ModelViewSet):
     detail=False,
     methods=['get'],
     permission_classes=[IsAuthenticated]
-)
+)   
+    
     def my_company(self, request):
 
      company = Company.objects.filter(
@@ -50,6 +51,33 @@ class CompanyViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(recruiter=self.request.user)
+    
+    def update(self, request, *args, **kwargs):
+
+     company = self.get_object()
+ 
+     serializer = self.get_serializer(
+        company,
+        data=request.data,
+        partial=True
+    )
+
+     if not serializer.is_valid():
+
+        print(
+            "COMPANY UPDATE ERRORS:",
+            serializer.errors
+        )
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+     serializer.save()
+
+     return Response(serializer.data)
+
 
 class DriveViewSet(viewsets.ModelViewSet):
     """ViewSet for Drive model (Read-only with custom filters)"""
@@ -65,6 +93,23 @@ class DriveViewSet(viewsets.ModelViewSet):
     search_fields = ['position', 'company__name']
     ordering_fields = ['deadline', 'created_at']
     ordering = ['-created_at']
+
+ 
+
+    def update(
+    self,
+    request,
+    *args,
+    **kwargs
+):
+     kwargs['partial'] = True
+
+     return super().update(
+        request,
+        *args,
+        **kwargs
+    )
+
 
     def perform_create(self, serializer):
         """
@@ -116,7 +161,23 @@ class ApplicationViewSet(viewsets.ModelViewSet):
     filterset_fields = ['status', 'drive']
     ordering_fields = ['applied_at']
     ordering = ['-applied_at']
+    
 
+    def update(
+    self,
+    request,
+    *args,
+    **kwargs
+):
+     kwargs['partial'] = True
+
+     return super().update(
+        request,
+        *args,
+        **kwargs
+    )
+
+    
     def get_queryset(self):
         company = Company.objects.filter(
             recruiter=self.request.user

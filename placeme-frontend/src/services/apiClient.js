@@ -661,14 +661,8 @@ export const recruiter = {
       data
     ),
 
-  updateDrive: (
-    id,
-    data
-  ) =>
-    apiClient.put(
-      `/placement/drives/${id}/`,
-      data
-    ),
+  updateDrive: (id, data) =>
+  api.patch(`/placement/drives/${id}/`, data),
 
   deleteDrive: (
     id
