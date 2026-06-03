@@ -1,14 +1,21 @@
 import { useState } from 'react'
 import { recruiterService } from '../../services/api'
+import { toast } from 'react-toastify'
+import * as Icons from 'lucide-react'
+import { motion } from 'framer-motion'
 
 export default function CreateDrive() {
+  const [loading, setLoading] = useState(false)
+
   const [formData, setFormData] = useState({
     position: '',
     package: '',
-    eligibility: '',
+    ctc: '',
+    eligibility: 'All',
     skills: '',
     location: '',
     deadline: '',
+    drive_date: '',
     description: '',
   })
 
@@ -20,29 +27,75 @@ export default function CreateDrive() {
   }
 
   const handleSubmit = async (e) => {
-  e.preventDefault()
+    e.preventDefault()
 
-  try {
-    const response = await recruiterService.createDrive(formData)
+    if (!formData.position) {
+      toast.error('Position is required')
+      return
+    }
 
-    console.log(response.data)
+    if (!formData.deadline) {
+      toast.error('Deadline is required')
+      return
+    }
 
-    alert('Drive Created Successfully')
-  } catch (error) {
-  console.error(error.response?.data)
-  alert('Failed to create drive')
-}
-}
+    try {
+      setLoading(true)
 
+      const payload = {
+        // company_id: 1, // temporary
+        position: formData.position,
+        package: formData.package,
+        ctc: formData.ctc || null,
+        eligibility: formData.eligibility,
+        required_skills: formData.skills,
+        job_description: formData.description,
+        location: formData.location,
+        deadline: formData.deadline,
+        drive_date: formData.drive_date || null,
+      }
 
+      await recruiterService.createDrive(payload)
 
-  
+      toast.success('Drive created successfully 🚀')
+
+      setFormData({
+        position: '',
+        package: '',
+        ctc: '',
+        eligibility: 'All',
+        skills: '',
+        location: '',
+        deadline: '',
+        drive_date: '',
+        description: '',
+      })
+
+    } catch (error) {
+  console.log(
+    'FULL ERROR:',
+    error.response?.data
+  )
+
+  toast.error(
+    JSON.stringify(
+      error.response?.data
+    )
+  )
+} finally {
+      setLoading(false)
+    }
+  }
 
   return (
-    <div className="space-y-6">
-
-      <div>
-        <h1 className="text-3xl font-bold">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="max-w-6xl mx-auto"
+    >
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-slate-900">
           Create Placement Drive
         </h1>
 
@@ -51,125 +104,183 @@ export default function CreateDrive() {
         </p>
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white rounded-2xl border shadow-sm p-8 space-y-6"
-      >
-        <div>
-          <label className="block mb-2 font-medium">
-            Position
-          </label>
+      {/* Form Card */}
+      <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
 
-          <input
-            type="text"
-            name="position"
-            value={formData.position}
-            onChange={handleChange}
-            className="w-full border rounded-xl p-3"
-            placeholder="Software Engineer"
-          />
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6">
+          <h2 className="text-white text-xl font-semibold">
+            Drive Information
+          </h2>
         </div>
 
-        <div>
-          <label className="block mb-2 font-medium">
-            Package
-          </label>
-
-          <input
-            type="text"
-            name="package"
-            value={formData.package}
-            onChange={handleChange}
-            className="w-full border rounded-xl p-3"
-            placeholder="12 LPA"
-          />
-        </div>
-
-        <div>
-          <label className="block mb-2 font-medium">
-            Eligibility
-          </label>
-
-          <select
-            name="eligibility"
-            value={formData.eligibility}
-            onChange={handleChange}
-            className="w-full border rounded-xl p-3"
-          >
-            <option value="">Select</option>
-            <option value="All">All</option>
-            <option value="CSE">CSE</option>
-            <option value="IT">IT</option>
-            <option value="ECE">ECE</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block mb-2 font-medium">
-            Required Skills
-          </label>
-
-          <input
-            type="text"
-            name="skills"
-            value={formData.skills}
-            onChange={handleChange}
-            className="w-full border rounded-xl p-3"
-            placeholder="React, Node.js, Django"
-          />
-        </div>
-
-        <div>
-          <label className="block mb-2 font-medium">
-            Location
-          </label>
-
-          <input
-            type="text"
-            name="location"
-            value={formData.location}
-            onChange={handleChange}
-            className="w-full border rounded-xl p-3"
-            placeholder="Bangalore"
-          />
-        </div>
-
-        <div>
-          <label className="block mb-2 font-medium">
-            Deadline
-          </label>
-
-          <input
-            type="date"
-            name="deadline"
-            value={formData.deadline}
-            onChange={handleChange}
-            className="w-full border rounded-xl p-3"
-          />
-        </div>
-
-        <div>
-          <label className="block mb-2 font-medium">
-            Job Description
-          </label>
-
-          <textarea
-            rows="5"
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            className="w-full border rounded-xl p-3"
-          />
-        </div>
-
-        <button
-          type="submit"
-          className="px-6 py-3 rounded-xl bg-indigo-600 text-white font-medium hover:bg-indigo-700"
+        <form
+          onSubmit={handleSubmit}
+          className="p-8 space-y-8"
         >
-          Create Drive
-        </button>
+          {/* Grid */}
+          <div className="grid md:grid-cols-2 gap-6">
 
-      </form>
-    </div>
+            <div>
+              <label className="block mb-2 font-medium">
+                Position
+              </label>
+
+              <input
+                type="text"
+                name="position"
+                value={formData.position}
+                onChange={handleChange}
+                placeholder="Software Engineer"
+                className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            <div>
+              <label className="block mb-2 font-medium">
+                Package
+              </label>
+
+              <input
+                type="text"
+                name="package"
+                value={formData.package}
+                onChange={handleChange}
+                placeholder="12 LPA"
+                className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            <div>
+              <label className="block mb-2 font-medium">
+                CTC
+              </label>
+
+              <input
+                type="number"
+                name="ctc"
+                value={formData.ctc}
+                onChange={handleChange}
+                placeholder="12"
+                className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            <div>
+              <label className="block mb-2 font-medium">
+                Eligibility
+              </label>
+
+              <select
+                name="eligibility"
+                value={formData.eligibility}
+                onChange={handleChange}
+                className="w-full border rounded-xl p-3"
+              >
+                <option value="All">All Branches</option>
+                <option value="CSE">CSE</option>
+                <option value="IT">IT</option>
+                <option value="ECE">ECE</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block mb-2 font-medium">
+                Location
+              </label>
+
+              <input
+                type="text"
+                name="location"
+                value={formData.location}
+                onChange={handleChange}
+                placeholder="Bangalore"
+                className="w-full border rounded-xl p-3"
+              />
+            </div>
+
+            <div>
+              <label className="block mb-2 font-medium">
+                Required Skills
+              </label>
+
+              <input
+                type="text"
+                name="skills"
+                value={formData.skills}
+                onChange={handleChange}
+                placeholder="React, Django, AWS"
+                className="w-full border rounded-xl p-3"
+              />
+            </div>
+
+            <div>
+              <label className="block mb-2 font-medium">
+                Application Deadline
+              </label>
+
+              <input
+                type="datetime-local"
+                name="deadline"
+                value={formData.deadline}
+                onChange={handleChange}
+                className="w-full border rounded-xl p-3"
+              />
+            </div>
+
+            <div>
+              <label className="block mb-2 font-medium">
+                Drive Date
+              </label>
+
+              <input
+                type="datetime-local"
+                name="drive_date"
+                value={formData.drive_date}
+                onChange={handleChange}
+                className="w-full border rounded-xl p-3"
+              />
+            </div>
+
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block mb-2 font-medium">
+              Job Description
+            </label>
+
+            <textarea
+              rows="6"
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              placeholder="Describe the role, responsibilities, and hiring process..."
+              className="w-full border rounded-xl p-4"
+            />
+          </div>
+
+          {/* Submit */}
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex items-center gap-2 px-8 py-3 rounded-xl bg-indigo-600 text-white font-medium hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {loading ? (
+                <>
+                  <Icons.Loader2 className="w-5 h-5 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <Icons.PlusCircle className="w-5 h-5" />
+                  Create Drive
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </motion.div>
   )
 }

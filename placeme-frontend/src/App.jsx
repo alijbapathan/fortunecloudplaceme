@@ -8,6 +8,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import NotFound from './pages/NotFound'
 
+
 // Student Pages
 import { StudentDashboard } from './pages/StudentDashboard'
 import { Profile } from './pages/Profile'
@@ -21,6 +22,10 @@ import { Settings } from './pages/Settings'
 import { Training } from './pages/Training'
 
 // Recruiter Pages
+import ViewDrive from './pages/recruiter/ViewDrive'
+import EditDrive from './pages/recruiter/EditDrive'
+import RecruiterLogin from './pages/recruiter/RecruiterLogin'
+import RecruiterRegister from './pages/recruiter/RecruiterRegister'
 import RecruiterDashboard from './pages/recruiter/RecruiterDashboard'
 import CreateDrive from './pages/recruiter/CreateDrive'
 import ManageDrives from './pages/recruiter/ManageDrives'
@@ -47,97 +52,100 @@ function App() {
       <div className="min-h-screen bg-slate-50">
         <Routes>
 
-          {/* Public Routes */}
-          <Route path="/" element={<Home />} />
- 
+          
+        {/* Public Routes */}
+<Route path="/" element={<Home />} />
 
-          <Route
-            path="/login"
-            element={
-              isAuthenticated ? (
-                <Navigate to="/dashboard" />
-              ) : (
-                <Login />
-              )
-            }
-          />
+<Route
+  path="/login"
+  element={
+    hasToken ? (
+      <Navigate to="/dashboard" />
+    ) : (
+      <Login />
+    )
+  }
+/>
 
-          <Route
-            path="/register"
-            element={
-              isAuthenticated ? (
-                <Navigate to="/dashboard" />
-              ) : (
-                <Register />
-              )
-            }
-          />
+<Route
+  path="/register"
+  element={
+    hasToken ? (
+      <Navigate to="/dashboard" />
+    ) : (
+      <Register />
+    )
+  }
+/>
 
-          {/* =========================
-              STUDENT ROUTES
-          ========================= */}
-          <Route element={<PrivateRoute />}>
-            <Route element={<MainLayout />}>
-<<<<<<< HEAD
-              <Route path="/dashboard" element={<StudentDashboard />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/drives" element={<PlacementDrives />} />
-              <Route path="/applications" element={<Applications />} />
-              <Route path="/mock-tests" element={<MockTests />} />
-              <Route path="/interviews" element={<InterviewExperience />} />
-              <Route path="/resume" element={<ResumeBuilder />} />
-              <Route path="/notifications" element={<NotificationsPage />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/training" element={<Training />} />
-=======
+{/* STUDENT ROUTES */}
+<Route element={<PrivateRoute />}>
+  <Route element={<MainLayout />}>
+    <Route path="/dashboard" element={<StudentDashboard />} />
+    <Route path="/profile" element={<Profile />} />
+    <Route path="/drives" element={<PlacementDrives />} />
+    <Route path="/applications" element={<Applications />} />
+    <Route path="/mock-tests" element={<MockTests />} />
+    <Route path="/interviews" element={<InterviewExperience />} />
+    <Route path="/resume" element={<ResumeBuilder />} />
+    <Route path="/notifications" element={<NotificationsPage />} />
+    <Route path="/settings" element={<Settings />} />
+    <Route path="/training" element={<Training />} />
+  </Route>
+</Route>
 
-              <Route
-                path="/dashboard"
-                element={<StudentDashboard />}
-              />
+{/* RECRUITER ROUTES */}
+<Route element={<PrivateRoute />}>
+  <Route element={<RecruiterLayout />}>
+    <Route
+      path="/recruiter/dashboard"
+      element={<RecruiterDashboard />}
+    />
+    <Route
+      path="/recruiter/create-drive"
+      element={<CreateDrive />}
+    />
+    <Route
+      path="/recruiter/manage-drives"
+      element={<ManageDrives />}
+    />
+    <Route
+      path="/recruiter/applications"
+      element={<ApplicationsList />}
+    />
+    <Route
+      path="/recruiter/interviews"
+      element={<InterviewSchedule />}
+    />
+    <Route
+      path="/recruiter/company"
+      element={<CompanyProfile />}
+    />
+    <Route
+      path="/recruiter/analytics"
+      element={<Analytics />}
+    />
+    <Route
+      path="/recruiter/applicant/:id"
+      element={<ApplicantProfile />}
+    />
+  </Route>
 
-              <Route
-                path="/profile"
-                element={<Profile />}
-              />
+    <Route
+  path="/recruiter/login"
+  element={<RecruiterLogin />}
+/>
 
-              <Route
-                path="/drives"
-                element={<PlacementDrives />}
-              />
+<Route
+  path="/recruiter/register"
+  element={<RecruiterRegister />}
+/>
+</Route>
 
-              <Route
-                path="/applications"
-                element={<Applications />}
-              />
+{/* 404 */}
+<Route path="*" element={<NotFound />} />
 
-              <Route
-                path="/mock-tests"
-                element={<MockTests />}
-              />
-
-              <Route
-                path="/interviews"
-                element={<InterviewExperience />}
-              />
-
-              <Route
-                path="/resume"
-                element={<ResumeBuilder />}
-              />
-
-              <Route
-                path="/notifications"
-                element={<NotificationsPage />}
-              />
-
-              <Route
-                path="/settings"
-                element={<Settings />}
-              />
-
-            </Route>
-          </Route>
+              
 
           {/* =========================
               RECRUITER ROUTES
@@ -179,19 +187,28 @@ function App() {
                 path="/recruiter/analytics"
                 element={<Analytics />}
               />
+              
+              <Route
+  path="/recruiter/drives/:id"
+  element={<ViewDrive />}
+/>
 
+<Route
+  path="/recruiter/drives/edit/:id"
+  element={<EditDrive />}
+/>
               <Route
                 path="/recruiter/applicant/:id"
                 element={<ApplicantProfile />}
               />
 
->>>>>>> 6029b95d (.)
+
             </Route>
           </Route>
 
           {/* 404 */}
           <Route path="*" element={<NotFound />} />
-
+       
         </Routes>
       </div>
 

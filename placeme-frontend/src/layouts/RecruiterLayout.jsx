@@ -1,6 +1,6 @@
 import { Outlet } from 'react-router-dom'
 import { RecruiterSidebar } from '../components/recruiter/RecruiterSidebar'
-import { RecruiterNavbar } from '../components/recruiter/RecruiterNavbar'
+import  RecruiterNavbar  from '../components/recruiter/RecruiterNavbar'
 
 export default function RecruiterLayout() {
   return (

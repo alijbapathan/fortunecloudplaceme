@@ -603,3 +603,138 @@ export const career = {
       `/career/projects/${id}/`
     ),
 }
+
+
+
+// ============================================
+// RECRUITER API SERVICES
+// ============================================
+
+export const recruiter = {
+
+  // ==========================
+  // COMPANY
+  // ==========================
+
+  getMyCompany: () =>
+    apiClient.get(
+      '/placement/companies/my_company/'
+    ),
+
+  updateCompany: (
+    id,
+    data
+  ) =>
+    apiClient.put(
+      `/placement/companies/${id}/`,
+      data
+    ),
+
+  getCompanyById: (
+    id
+  ) =>
+    apiClient.get(
+      `/placement/companies/${id}/`
+    ),
+
+  // ==========================
+  // DRIVES
+  // ==========================
+
+  getDrives: () =>
+    apiClient.get(
+      '/placement/drives/'
+    ),
+
+  getDriveById: (
+    id
+  ) =>
+    apiClient.get(
+      `/placement/drives/${id}/`
+    ),
+
+  createDrive: (
+    data
+  ) =>
+    apiClient.post(
+      '/placement/drives/',
+      data
+    ),
+
+  updateDrive: (
+    id,
+    data
+  ) =>
+    apiClient.put(
+      `/placement/drives/${id}/`,
+      data
+    ),
+
+  deleteDrive: (
+    id
+  ) =>
+    apiClient.delete(
+      `/placement/drives/${id}/`
+    ),
+
+  // ==========================
+  // APPLICATIONS
+  // ==========================
+
+  getApplications: () =>
+    apiClient.get(
+      '/placement/applications/'
+    ),
+
+  getApplicationById: (
+    id
+  ) =>
+    apiClient.get(
+      `/placement/applications/${id}/`
+    ),
+
+  updateApplicationStatus: (
+    id,
+    status
+  ) =>
+    apiClient.patch(
+      `/placement/applications/${id}/update_status/`,
+      {
+        status,
+      }
+    ),
+
+  // ==========================
+  // INTERVIEWS
+  // ==========================
+
+  getInterviews: () =>
+    apiClient.get(
+      '/placement/interview-schedules/'
+    ),
+
+  createInterview: (
+    data
+  ) =>
+    apiClient.post(
+      '/placement/interview-schedules/',
+      data
+    ),
+
+  updateInterview: (
+    id,
+    data
+  ) =>
+    apiClient.put(
+      `/placement/interview-schedules/${id}/`,
+      data
+    ),
+
+  deleteInterview: (
+    id
+  ) =>
+    apiClient.delete(
+      `/placement/interview-schedules/${id}/`
+    ),
+}
+

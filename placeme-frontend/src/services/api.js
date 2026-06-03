@@ -51,6 +51,10 @@ export const authService = {
 
   login: (username, password) =>
     api.post('/token/', { username, password }),
+  
+  
+  getProfile: () =>
+    api.get('/users/me/'),
 
   getMe: () =>
     api.get('/users/me/'),
@@ -80,6 +84,8 @@ export const recruiterService = {
     api.delete(`/placement/drives/${id}/`),
 
   // Applications
+  getApplicationById: (id) =>
+  api.get(`/placement/applications/${id}/`),
   getApplications: () =>
     api.get('/placement/applications/'),
 
@@ -92,9 +98,27 @@ export const recruiterService = {
   createInterview: (data) =>
     api.post('/placement/interview-schedules/', data),
 
+  getInterviews: () =>
+  api.get('/placement/interview-schedules/'),
+
+   updateInterview: (id, data) =>
+   api.put(`/placement/interview-schedules/${id}/`, data),
+
+  deleteInterview: (id) =>
+    api.delete(`/placement/interview-schedules/${id}/`),
+
   // Company
-  getCompany: (id) =>
+
+  getMyCompany: () =>
+  api.get('/placement/companies/my_company/'),
+
+updateCompany: (id, data) =>
+  api.put(`/placement/companies/${id}/`, data),
+   getCompany: (id) =>
     api.get(`/users/companies/${id}/`),
+
+  getDriveById: (id) =>
+  api.get(`/placement/drives/${id}/`),
 }
 
 

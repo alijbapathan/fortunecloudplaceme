@@ -3,13 +3,16 @@ import { persist } from 'zustand/middleware'
 
 export const useAuthStore = create(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       token: null,
       refreshToken: null,
       isAuthenticated: false,
 
       login: (user, token, refreshToken) => {
+        localStorage.setItem('access_token', token)
+        localStorage.setItem('refresh_token', refreshToken)
+
         set({
           user,
           token,
@@ -19,12 +22,10 @@ export const useAuthStore = create(
       },
 
       logout: () => {
-        // Clear localStorage tokens
         localStorage.removeItem('access_token')
         localStorage.removeItem('refresh_token')
-        // Clear persisted Zustand state
         localStorage.removeItem('placeme-auth')
-        
+
         set({
           user: null,
           token: null,
@@ -33,20 +34,55 @@ export const useAuthStore = create(
         })
       },
 
-      updateUser: (user) => {
-        set({ user })
+      updateUser: (userData) => {
+        set((state) => ({
+          user: {
+            ...state.user,
+            ...userData,
+          },
+        }))
       },
 
       setToken: (token) => {
-        set({ token })
+        localStorage.setItem('access_token', token)
+
+        set({
+          token,
+          isAuthenticated: !!token,
+        })
+      },
+
+      setRefreshToken: (refreshToken) => {
+        localStorage.setItem('refresh_token', refreshToken)
+
+        set({
+          refreshToken,
+        })
+      },
+
+      hydrateAuth: () => {
+        const token =
+          localStorage.getItem('access_token')
+
+        const refreshToken =
+          localStorage.getItem('refresh_token')
+
+        if (token) {
+          set({
+            token,
+            refreshToken,
+            isAuthenticated: true,
+          })
+        }
       },
     }),
     {
       name: 'placeme-auth',
+
       partialize: (state) => ({
+        user: state.user,
         token: state.token,
         refreshToken: state.refreshToken,
-        user: state.user,
         isAuthenticated: state.isAuthenticated,
       }),
     }

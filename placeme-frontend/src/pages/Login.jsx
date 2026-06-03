@@ -8,6 +8,7 @@ import { EnvelopeIcon, LockClosedIcon } from '@heroicons/react/24/outline'
 const Login = () => {
   const navigate = useNavigate()
   const { login } = useAuthStore()
+  const setAuthToken = useAuthStore(state => state.setToken)
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     username: '',
@@ -20,43 +21,69 @@ const Login = () => {
   }
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
+  e.preventDefault()
+  setLoading(true)
 
-    try {
-      // Login to get tokens
-      const tokenRes = await auth.login(formData.username, formData.password)
-      const { access, refresh } = tokenRes.data
+  try {
+    // Get JWT tokens
+    const tokenRes = await auth.login(
+      formData.username,
+      formData.password
+    )
 
-      // Store tokens in localStorage for persistence across page reloads
-      localStorage.setItem('access_token', access)
-      localStorage.setItem('refresh_token', refresh)
+    const { access, refresh } = tokenRes.data
+    localStorage.setItem('access_token', access)
+localStorage.setItem('refresh_token', refresh)
 
-      // Small delay to ensure token is set in interceptor
-      await new Promise(resolve => setTimeout(resolve, 50))
+console.log('TOKEN SAVED:', access)
 
-      // Now get user data with the token
-      const userRes = await authService.getMe()
-      
-      // Store everything in auth store
-      console.log('User Data:', userRes.data)
-      login(userRes.data, access, refresh)
-      toast.success('Login successful!')
+    // Store tokens
+    setAuthToken(access)
 
-// Temporary recruiter login for demo
-if (formData.username.toLowerCase() === 'messi') {
-  navigate('/recruiter/dashboard')
-} else {
-  navigate('/dashboard')
-}
-    } catch (error) {
-      console.error('Login error:', error.response?.data || error.message)
-      const errorMsg = error.response?.data?.detail || 'Invalid username or password'
-      toast.error(errorMsg)
-    } finally {
-      setLoading(false)
+    useAuthStore.setState({
+      token: access,
+      refreshToken: refresh,
+    })
+
+    // Small delay
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    // Get current user
+    const userRes = await auth.getProfile()
+
+    console.log('USER DATA:', userRes.data)
+    console.log('ROLE:', userRes.data.role)
+
+    // Save user to store
+    login(userRes.data, access, refresh)
+
+    toast.success('Login successful!')
+
+    // ROLE BASED REDIRECT
+    if (userRes.data.role === 'recruiter') {
+      navigate('/recruiter/dashboard')
+    } else if (userRes.data.role === 'student') {
+      navigate('/dashboard')
+    } else if (userRes.data.role === 'tpo') {
+      navigate('/dashboard')
+    } else {
+      navigate('/dashboard')
     }
+
+  } catch (error) {
+    console.error('Login error:', error.response?.data || error.message)
+
+    const errorMsg =
+      error.response?.data?.detail ||
+      error.response?.data?.message ||
+      'Login failed'
+
+    toast.error(errorMsg)
+
+  } finally {
+    setLoading(false)
   }
+}
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center px-4 py-12">
