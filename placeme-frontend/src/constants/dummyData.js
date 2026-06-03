@@ -295,3 +295,32 @@ export const AI_SUGGESTIONS = [
   'Join our DSA crash course to improve problem-solving skills.',
   'Your interview experience sharing helps others! Keep sharing.'
 ]
+
+
+// rr tpo dummy data
+export const TPO_SIDEBAR_ITEMS = [
+  {
+    id: 'dashboard',
+    label: 'Overview',
+    icon: 'LayoutDashboard',
+    path: '/tpo/dashboard'
+  },
+  {
+    id: 'companies',
+    label: 'Companies',
+    icon: 'Building2',
+    path: '/tpo/companies'
+  },
+  {
+    id: 'drives',
+    label: 'Drives',
+    icon: 'Briefcase',
+    path: '/tpo/drives'
+  },
+  {
+    id: 'applications',
+    label: 'Applications',
+    icon: 'Users',
+    path: '/tpo/applications'
+  }
+]

@@ -7,7 +7,18 @@ from .models import User
 from .serializers import UserSerializer, UserRegistrationSerializer
 
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
+    # queryset = User.objects.all()
+    def get_queryset(self):  #rr Override get_queryset to return different results based on user role
+        user = self.request.user
+
+    # TPO can see all users
+        if user.role == "tpo":
+            return User.objects.all()
+
+    # students can only see themselves
+        return User.objects.filter(id=user.id)
+    
+    
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
 

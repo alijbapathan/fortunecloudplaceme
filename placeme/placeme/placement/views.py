@@ -4,13 +4,15 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Company, Drive, Application
-from .serializers import (
+from .serializers import (    
     CompanySerializer, DriveSerializer,
     ApplicationListSerializer, ApplicationDetailSerializer
 )
 
+from .permissions import IsTPO#rr TPOCompanyViewSet is in tpo_views.py to avoid circular imports
+from django.db.models import Count#rr For analytics endpoint to get number of applications per drive
 
-class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
+class CompanyViewSet(viewsets.ReadOnlyModelViewSet): 
     """ViewSet for Company model (Read-only)"""
     queryset = Company.objects.all()
     serializer_class = CompanySerializer
@@ -25,9 +27,11 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         """Get company details"""
         return super().retrieve(request, *args, **kwargs)
+    
+  
 
 
-class DriveViewSet(viewsets.ReadOnlyModelViewSet):
+class DriveViewSet(viewsets.ReadOnlyModelViewSet): 
     """ViewSet for Drive model (Read-only with custom filters)"""
     queryset = Drive.objects.select_related('company').all()
     serializer_class = DriveSerializer
@@ -37,6 +41,8 @@ class DriveViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ['position', 'company__name']
     ordering_fields = ['deadline', 'created_at']
     ordering = ['-created_at']
+    
+
 
     @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated])
     def check_application_status(self, request, pk=None):
@@ -52,6 +58,8 @@ class DriveViewSet(viewsets.ReadOnlyModelViewSet):
                 'application_id': application.id
             })
         return Response({'applied': False})
+    
+  
 
 
 class ApplicationViewSet(viewsets.ModelViewSet):
@@ -62,14 +70,33 @@ class ApplicationViewSet(viewsets.ModelViewSet):
     ordering_fields = ['applied_at']
     ordering = ['-applied_at']
 
+
     def get_queryset(self):
-        """Get applications for current student"""
-        return Application.objects.filter(student=self.request.user).select_related('drive', 'drive__company')
+        user = self.request.user
+
+        if user.role == "tpo": #rr TPOs can see all applications across drives for analytics and management purposes
+            return Application.objects.all().select_related(
+            'drive',
+            'drive__company',
+            'student'
+        )
+
+        return Application.objects.filter(
+        student=user
+        ).select_related(
+        'drive',
+        'drive__company'
+        )
+    
 
     def get_serializer_class(self):
         """Use different serializers for list and detail"""
+        if self.action == 'create':
+            return ApplicationDetailSerializer
+
         if self.action == 'retrieve':
             return ApplicationDetailSerializer
+
         return ApplicationListSerializer
 
     def create(self, request, *args, **kwargs):
@@ -81,9 +108,9 @@ class ApplicationViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         """Auto-assign student to current user"""
-        serializer.save(student=self.request.user)
+        serializer.save()
 
-    @action(detail=True, methods=['patch'], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=['patch'], permission_classes=[IsAuthenticated,IsTPO])#rr Allow TPOs to update application status as well
     def update_status(self, request, pk=None):
         """Update application status"""
         application = self.get_object()
@@ -117,3 +144,20 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         application.save()
         serializer = self.get_serializer(application)
         return Response(serializer.data)
+    
+    # @action(              #rr Endpoint for TPOs to view all applications across drives with student and company details
+    # detail=False,
+    # methods=['get'],
+    # permission_classes=[IsAuthenticated, IsTPO])
+    # def all_applications(self, request):
+    #     apps = Application.objects.select_related(
+    #     'student',
+    #     'drive',
+    #     'drive__company'
+    #     )
+    #     serializer = ApplicationDetailSerializer(
+    #     apps,
+    #     many=True
+    #     )
+    #     return Response(serializer.data)
+

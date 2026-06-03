@@ -93,6 +93,54 @@ export const placement = {
 };
 
 // ============================================
+// rr tpo api services
+// ============================================
+
+
+export const tpo = {
+  // Dashboard
+  getStats: () =>
+    apiClient.get('/placement/tpo/dashboard/stats/'),
+
+  // Companies
+  getCompanies: () =>
+    apiClient.get('/placement/tpo/companies/'),
+
+  createCompany: (data) =>
+    apiClient.post('/placement/tpo/companies/', data),
+
+  updateCompany: (id, data) =>
+    apiClient.patch(`/placement/tpo/companies/${id}/`, data),
+
+  deleteCompany: (id) =>
+    apiClient.delete(`/placement/tpo/companies/${id}/`),
+
+  // Drives
+  getDrives: () =>
+    apiClient.get('/placement/tpo/drives/'),
+
+  createDrive: (data) =>
+    apiClient.post('/placement/tpo/drives/', data),
+
+  updateDrive: (id, data) =>
+    apiClient.patch(`/placement/tpo/drives/${id}/`, data),
+
+  deleteDrive: (id) =>
+    apiClient.delete(`/placement/tpo/drives/${id}/`),
+
+  // Applications
+  getApplications: () =>
+    apiClient.get('/placement/tpo/applications/'),
+
+  updateStatus: (id, status) =>
+    apiClient.patch(
+      `/placement/tpo/applications/${id}/update_status/`,
+      { status }
+    )
+}
+
+
+// ============================================
 // Training API Services
 // ============================================
 

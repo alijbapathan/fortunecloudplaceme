@@ -15,7 +15,7 @@ class CompanySerializer(serializers.ModelSerializer):
 class DriveSerializer(serializers.ModelSerializer):
     """Serializer for Drive model"""
     company = CompanySerializer(read_only=True)
-    company_id = serializers.IntegerField(write_only=True, required=False)
+    company_id = serializers.IntegerField(write_only=True, required=True)
     days_left = serializers.SerializerMethodField()
     total_applications = serializers.SerializerMethodField()
 
@@ -35,15 +35,31 @@ class DriveSerializer(serializers.ModelSerializer):
     def get_total_applications(self, obj):
         return obj.applications.count()
 
-    def create(self, validated_data):
-        company_id = validated_data.pop('company_id', None)
-        if company_id:
-            try:
-                company = Company.objects.get(id=company_id)
-                validated_data['company'] = company
-            except Company.DoesNotExist:
-                raise serializers.ValidationError({'company_id': 'Company not found'})
-        return super().create(validated_data)
+    # def create(self, validated_data):
+    #     company_id = validated_data.pop('company_id', None)
+    #     if company_id:
+    #         try:
+    #             company = Company.objects.get(id=company_id)
+    #             validated_data['company'] = company
+    #         except Company.DoesNotExist:
+    #             raise serializers.ValidationError({'company_id': 'Company not found'})
+    #     return super().create(validated_data)
+    
+    
+    def create(self, validated_data):#rr Custom create method to handle company_id and avoid circular imports
+        company_id = validated_data.pop('company_id')
+
+        try:
+            company = Company.objects.get(id=company_id)
+        except Company.DoesNotExist:
+            raise serializers.ValidationError(
+            {'company_id': 'Company not found'}
+        )
+
+        return Drive.objects.create(
+        company=company,
+        **validated_data
+    )
 
 
 class ApplicationListSerializer(serializers.ModelSerializer):

@@ -24,9 +24,10 @@ const PrivateRoute = () => {
   }
 
   // If no token, redirect to login
-  if (!hasToken) {
-    return <Navigate to="/login" replace />
-  }
+  
+  // if (!hasToken) {
+  //   return <Navigate to="/login" replace />
+  // }///tetmprory for tpo routes
 
   // Token exists, allow access
   return <Outlet />
