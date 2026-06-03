@@ -15,3 +15,8 @@ dist/
 # OS
 .DS_Store
 Thumbs.db
+
+media/
+*.sqlite3
+*.pyc
+__pycache__/
