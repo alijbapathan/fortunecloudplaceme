@@ -5,7 +5,6 @@ import * as Icons from 'lucide-react'
 
 export default function ViewDrive() {
 
-    
   const { id } = useParams()
   const navigate = useNavigate()
 

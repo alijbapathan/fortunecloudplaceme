@@ -1,20 +1,19 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import * as Icons from 'lucide-react'
 
 import {
   authService,
-  recruiterService,
+  recruiterService
 } from '../../services/api'
 
 import {
-  useAuthStore,
+  useAuthStore
 } from '../../context/authContext'
 
 export default function RecruiterNavbar() {
 
   const navigate = useNavigate()
-  const dropdownRef = useRef(null)
 
   const logout =
     useAuthStore(
@@ -22,19 +21,19 @@ export default function RecruiterNavbar() {
     )
 
   const [user, setUser] =
-    useState(null)
+    useState({})
 
   const [company, setCompany] =
-    useState(null)
+    useState({})
 
   const [searchTerm, setSearchTerm] =
     useState('')
 
-  const [searchResults, setSearchResults] =
-    useState([])
-
   const [isProfileOpen, setIsProfileOpen] =
     useState(false)
+
+  const [searchResults, setSearchResults] =
+    useState([])
 
   useEffect(() => {
 
@@ -55,40 +54,7 @@ export default function RecruiterNavbar() {
         'companyUpdated',
         refresh
       )
-
     }
-
-  }, [])
-
-  useEffect(() => {
-
-    const handleOutside = (
-      event
-    ) => {
-
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(
-          event.target
-        )
-      ) {
-
-        setIsProfileOpen(false)
-
-      }
-    }
-
-    document.addEventListener(
-      'mousedown',
-      handleOutside
-    )
-
-    return () =>
-
-      document.removeEventListener(
-        'mousedown',
-        handleOutside
-      )
 
   }, [])
 
@@ -96,33 +62,25 @@ export default function RecruiterNavbar() {
 
     try {
 
-      const userRes =
-        await authService.getProfile()
+      const [
+        userRes,
+        companyRes
+      ] = await Promise.all([
+        authService.getProfile(),
+        recruiterService.getMyCompany()
+      ])
 
-      setUser(userRes.data)
+      setUser(
+        userRes.data
+      )
 
-      try {
-
-        const companyRes =
-          await recruiterService.getMyCompany()
-
-        setCompany(
-          companyRes.data
-        )
-
-      } catch {
-
-        setCompany(null)
-
-      }
+      setCompany(
+        companyRes.data
+      )
 
     } catch (error) {
 
-      console.error(
-        'Navbar Load Error',
-        error
-      )
-
+      console.error(error)
     }
   }
 
@@ -133,47 +91,30 @@ export default function RecruiterNavbar() {
     navigate('/login')
   }
 
-  const handleSearch = async (
-    value
-  ) => {
+  const handleSearch = async (value) => {
 
     setSearchTerm(value)
-
-    if (!value.trim()) {
-
-      setSearchResults([])
-
-      return
-    }
 
     try {
 
       const [
         drivesRes,
-        appsRes,
+        applicationsRes,
+        interviewsRes
       ] = await Promise.all([
-
         recruiterService.getDrives(),
-
         recruiterService.getApplications(),
-
+        recruiterService.getInterviews()
       ])
 
       const drives =
-        Array.isArray(
-          drivesRes.data
-        )
-          ? drivesRes.data
-          : drivesRes.data.results ||
-            []
+        drivesRes.data || []
 
-      const apps =
-        Array.isArray(
-          appsRes.data
-        )
-          ? appsRes.data
-          : appsRes.data.results ||
-            []
+      const applications =
+        applicationsRes.data || []
+
+      const interviews =
+        interviewsRes.data || []
 
       const results = []
 
@@ -188,22 +129,13 @@ export default function RecruiterNavbar() {
         ) {
 
           results.push({
-
             type: 'Drive',
-
-            title:
-              drive.position,
-
-            subtitle:
-              drive.company?.name,
-
+            title: drive.position
           })
-
         }
-
       })
 
-      apps.forEach(app => {
+      applications.forEach(app => {
 
         if (
           app.student_name
@@ -214,81 +146,71 @@ export default function RecruiterNavbar() {
         ) {
 
           results.push({
-
-            type:
-              'Applicant',
-
+            type: 'Applicant',
             title:
-              app.student_name,
-
-            subtitle:
-              app.status,
-
+              app.student_name
           })
-
         }
+      })
 
+      interviews.forEach(interview => {
+
+        if (
+          interview.student_name
+            ?.toLowerCase()
+            .includes(
+              value.toLowerCase()
+            )
+        ) {
+
+          results.push({
+            type: 'Interview',
+            title:
+              interview.student_name
+          })
+        }
       })
 
       setSearchResults(
-        results.slice(0, 8)
+        value
+          ? results.slice(0, 6)
+          : []
       )
 
     } catch (error) {
 
       console.error(error)
-
     }
-
   }
-
-  const displayName =
-
-    company?.name ||
-
-    user?.username ||
-
-    'Recruiter'
-
-  const initials =
-    displayName
-      .split(' ')
-      .map(
-        word => word[0]
-      )
-      .join('')
-      .slice(0, 2)
-      .toUpperCase()
 
   return (
 
     <nav className="fixed top-0 left-72 right-0 h-20 bg-white border-b border-slate-200 z-40 flex items-center justify-between px-8">
 
-      {/* SEARCH */}
+      {/* Search */}
 
-      <div className="relative w-full max-w-xl">
+      <div className="relative w-full max-w-lg">
 
         <input
           type="text"
+          placeholder="Search drives, applicants, interviews..."
           value={searchTerm}
           onChange={(e) =>
             handleSearch(
               e.target.value
             )
           }
-          placeholder="Search drives, applicants..."
           className="w-full pl-12 pr-4 py-3 border rounded-xl bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
 
         <Icons.Search
-          size={18}
           className="absolute left-4 top-3.5 text-slate-400"
+          size={18}
         />
 
-        {searchResults.length >
-          0 && (
+        {searchResults.length > 0 && (
 
-          <div className="absolute mt-2 w-full bg-white rounded-2xl border shadow-xl overflow-hidden">
+          <div className="absolute mt-2 w-full bg-white border rounded-xl shadow-lg overflow-hidden">
 
             {searchResults.map(
               (
@@ -298,34 +220,22 @@ export default function RecruiterNavbar() {
 
                 <div
                   key={index}
-                  className="px-4 py-3 border-b hover:bg-slate-50"
+                  className="px-4 py-3 border-b hover:bg-slate-50 cursor-pointer"
                 >
 
-                  <h4 className="font-medium">
-
+                  <p className="font-medium">
                     {item.title}
-
-                  </h4>
+                  </p>
 
                   <p className="text-xs text-slate-500">
-
                     {item.type}
-
-                    {' • '}
-
-                    {
-                      item.subtitle
-                    }
-
                   </p>
 
                 </div>
-
               )
             )}
 
           </div>
-
         )}
 
       </div>
@@ -334,15 +244,17 @@ export default function RecruiterNavbar() {
 
       <div className="flex items-center gap-6">
 
-        {/* Notification */}
+        {/* Notifications */}
 
-        <button className="relative p-2 rounded-lg hover:bg-slate-100">
+        <button
+          className="relative p-2 rounded-lg hover:bg-slate-100"
+        >
 
           <Icons.Bell
             size={20}
           />
 
-          <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full" />
+          <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full" />
 
         </button>
 
@@ -350,10 +262,7 @@ export default function RecruiterNavbar() {
 
         {/* Profile */}
 
-        <div
-          className="relative"
-          ref={dropdownRef}
-        >
+        <div className="relative">
 
           <button
             onClick={() =>
@@ -364,39 +273,30 @@ export default function RecruiterNavbar() {
             className="flex items-center gap-3"
           >
 
-            {company?.logo_url ? (
+            <img
+              src={
+                company.logo_url ||
+                `https://ui-avatars.com/api/?name=${
+                  company.name ||
+                  user.username
+                }`
+              }
+              alt="logo"
+              className="w-10 h-10 rounded-full border"
+            />
 
-              <img
-                src={
-                  company.logo_url
-                }
-                alt="logo"
-                className="w-11 h-11 rounded-full border object-cover"
-              />
-
-            ) : (
-
-              <div className="w-11 h-11 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center">
-
-                {initials}
-
-              </div>
-
-            )}
-
-            <div className="hidden md:block text-left">
+            <div className="hidden sm:block text-left">
 
               <h4 className="font-semibold text-sm">
 
-                {displayName}
+                {company.name ||
+                  user.username}
 
               </h4>
 
               <p className="text-xs text-slate-500">
 
-                {
-                  user?.username
-                }
+                {user.username}
 
               </p>
 
@@ -410,22 +310,18 @@ export default function RecruiterNavbar() {
 
           {isProfileOpen && (
 
-            <div className="absolute right-0 mt-3 w-72 bg-white rounded-2xl border shadow-xl overflow-hidden">
+            <div className="absolute right-0 mt-3 w-72 bg-white border rounded-2xl shadow-xl overflow-hidden">
 
               <div className="p-5 border-b">
 
-                <h3 className="font-bold text-lg">
+                <h3 className="font-bold">
 
-                  {displayName}
-
+                  {company.name}
                 </h3>
 
                 <p className="text-sm text-slate-500">
 
-                  {
-                    user?.email
-                  }
-
+                  {user.email}
                 </p>
 
               </div>
@@ -439,24 +335,11 @@ export default function RecruiterNavbar() {
                 className="w-full px-5 py-3 flex items-center gap-3 hover:bg-slate-50"
               >
 
-                <Icons.Building2 size={18} />
+                <Icons.Building2
+                  size={18}
+                />
 
                 Company Profile
-
-              </button>
-
-              <button
-                onClick={() =>
-                  navigate(
-                    '/recruiter/dashboard'
-                  )
-                }
-                className="w-full px-5 py-3 flex items-center gap-3 hover:bg-slate-50"
-              >
-
-                <Icons.LayoutDashboard size={18} />
-
-                Dashboard
 
               </button>
 
@@ -469,7 +352,9 @@ export default function RecruiterNavbar() {
                 className="w-full px-5 py-3 flex items-center gap-3 hover:bg-slate-50"
               >
 
-                <Icons.BarChart3 size={18} />
+                <Icons.BarChart3
+                  size={18}
+                />
 
                 Analytics
 
@@ -482,7 +367,9 @@ export default function RecruiterNavbar() {
                 className="w-full px-5 py-3 flex items-center gap-3 text-red-600 hover:bg-red-50"
               >
 
-                <Icons.LogOut size={18} />
+                <Icons.LogOut
+                  size={18}
+                />
 
                 Logout
 
@@ -497,6 +384,5 @@ export default function RecruiterNavbar() {
       </div>
 
     </nav>
-
   )
 }

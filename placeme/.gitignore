@@ -1,17 +1,17 @@
 # Python
 venv/
-.venv/
 __pycache__/
 *.pyc
-
-# Django
 db.sqlite3
-
-# Node
-node_modules/
-
-# Vite
-.vite/
-
-# Environment files
 .env
+
+# React
+node_modules/
+dist/
+.env.local
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store

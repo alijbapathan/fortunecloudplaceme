@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import * as Icons from 'lucide-react'
 import { toast } from 'react-toastify'
 import { recruiterService } from '../../services/api'
 
@@ -9,11 +10,9 @@ export default function InterviewSchedule() {
 
   const [formData, setFormData] = useState({
     application: '',
-    round_type: 'technical',
-    scheduled_at: '',
+    round_name: '',
+    interview_date: '',
     meeting_link: '',
-    location: '',
-    interviewer_name: '',
     notes: ''
   })
 
@@ -22,6 +21,7 @@ export default function InterviewSchedule() {
   }, [])
 
   const fetchInterviews = async () => {
+
     try {
 
       const response =
@@ -50,7 +50,8 @@ export default function InterviewSchedule() {
 
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]:
+        e.target.value
     })
   }
 
@@ -60,24 +61,8 @@ export default function InterviewSchedule() {
 
     try {
 
-      const payload = {
-        application: Number(formData.application),
-        round_type: formData.round_type,
-        scheduled_at: formData.scheduled_at,
-        meeting_link: formData.meeting_link,
-        location: formData.location,
-        interviewer_name:
-          formData.interviewer_name,
-        notes: formData.notes
-      }
-
-      console.log(
-        'INTERVIEW PAYLOAD:',
-        payload
-      )
-
       await recruiterService.createInterview(
-        payload
+        formData
       )
 
       toast.success(
@@ -86,11 +71,9 @@ export default function InterviewSchedule() {
 
       setFormData({
         application: '',
-        round_type: 'technical',
-        scheduled_at: '',
+        round_name: '',
+        interview_date: '',
         meeting_link: '',
-        location: '',
-        interviewer_name: '',
         notes: ''
       })
 
@@ -100,15 +83,8 @@ export default function InterviewSchedule() {
 
       console.error(error)
 
-      console.log(
-        'INTERVIEW ERROR:',
-        error.response?.data
-      )
-
       toast.error(
-        JSON.stringify(
-          error.response?.data
-        )
+        'Failed to schedule interview'
       )
     }
   }
@@ -147,10 +123,10 @@ export default function InterviewSchedule() {
 
     switch (status) {
 
-      case 'selected':
+      case 'passed':
         return 'bg-green-100 text-green-700'
 
-      case 'rejected':
+      case 'failed':
         return 'bg-red-100 text-red-700'
 
       default:
@@ -159,8 +135,9 @@ export default function InterviewSchedule() {
   }
 
   return (
-
     <div className="space-y-8">
+
+      {/* Header */}
 
       <div>
 
@@ -173,6 +150,8 @@ export default function InterviewSchedule() {
         </p>
 
       </div>
+
+      {/* Stats */}
 
       <div className="grid md:grid-cols-3 gap-5">
 
@@ -191,17 +170,15 @@ export default function InterviewSchedule() {
         <div className="bg-white rounded-2xl border p-5">
 
           <p className="text-slate-500">
-            Selected
+            Passed
           </p>
 
           <h2 className="text-3xl font-bold text-green-600 mt-2">
-
             {
               interviews.filter(
-                i => i.status === 'selected'
+                i => i.status === 'passed'
               ).length
             }
-
           </h2>
 
         </div>
@@ -209,24 +186,22 @@ export default function InterviewSchedule() {
         <div className="bg-white rounded-2xl border p-5">
 
           <p className="text-slate-500">
-            Scheduled
+            Pending
           </p>
 
           <h2 className="text-3xl font-bold text-yellow-600 mt-2">
-
             {
               interviews.filter(
-                i =>
-                  i.status ===
-                  'scheduled'
+                i => i.status === 'scheduled'
               ).length
             }
-
           </h2>
 
         </div>
 
       </div>
+
+      {/* Schedule Form */}
 
       <div className="bg-white rounded-3xl border p-8">
 
@@ -249,35 +224,20 @@ export default function InterviewSchedule() {
             required
           />
 
-          <select
-            name="round_type"
-            value={formData.round_type}
+          <input
+            type="text"
+            name="round_name"
+            value={formData.round_name}
             onChange={handleChange}
+            placeholder="Technical Round"
             className="border rounded-xl p-3"
-          >
-
-            <option value="technical">
-              Technical Round
-            </option>
-
-            <option value="hr">
-              HR Round
-            </option>
-
-            <option value="managerial">
-              Managerial Round
-            </option>
-
-            <option value="final">
-              Final Round
-            </option>
-
-          </select>
+            required
+          />
 
           <input
             type="datetime-local"
-            name="scheduled_at"
-            value={formData.scheduled_at}
+            name="interview_date"
+            value={formData.interview_date}
             onChange={handleChange}
             className="border rounded-xl p-3"
             required
@@ -289,24 +249,6 @@ export default function InterviewSchedule() {
             value={formData.meeting_link}
             onChange={handleChange}
             placeholder="Meeting Link"
-            className="border rounded-xl p-3"
-          />
-
-          <input
-            type="text"
-            name="interviewer_name"
-            value={formData.interviewer_name}
-            onChange={handleChange}
-            placeholder="Interviewer Name"
-            className="border rounded-xl p-3"
-          />
-
-          <input
-            type="text"
-            name="location"
-            value={formData.location}
-            onChange={handleChange}
-            placeholder="Interview Location"
             className="border rounded-xl p-3"
           />
 
@@ -330,6 +272,8 @@ export default function InterviewSchedule() {
 
       </div>
 
+      {/* Interview List */}
+
       <div className="grid gap-5">
 
         {loading && (
@@ -339,7 +283,7 @@ export default function InterviewSchedule() {
         )}
 
         {!loading &&
-          interviews.map(item => (
+          interviews.map((item) => (
 
             <div
               key={item.id}
@@ -355,7 +299,7 @@ export default function InterviewSchedule() {
                   </h3>
 
                   <p className="text-slate-500">
-                    {item.round_type}
+                    {item.round_name}
                   </p>
 
                 </div>
@@ -371,9 +315,8 @@ export default function InterviewSchedule() {
               <div className="mt-4 space-y-2">
 
                 <p>
-                  📅 {' '}
-                  {new Date(
-                    item.scheduled_at
+                  📅 {new Date(
+                    item.interview_date
                   ).toLocaleString()}
                 </p>
 
@@ -391,11 +334,9 @@ export default function InterviewSchedule() {
                 )}
 
                 {item.notes && (
-
                   <p className="text-slate-600">
                     {item.notes}
                   </p>
-
                 )}
 
               </div>
@@ -403,10 +344,22 @@ export default function InterviewSchedule() {
               <div className="flex gap-3 mt-5">
 
                 <button
+                  className="px-4 py-2 bg-green-100 text-green-700 rounded-xl"
+                >
+                  Passed
+                </button>
+
+                <button
+                  className="px-4 py-2 bg-red-100 text-red-700 rounded-xl"
+                >
+                  Failed
+                </button>
+
+                <button
                   onClick={() =>
                     handleDelete(item.id)
                   }
-                  className="px-4 py-2 bg-red-100 text-red-700 rounded-xl"
+                  className="px-4 py-2 bg-slate-100 rounded-xl"
                 >
                   Delete
                 </button>

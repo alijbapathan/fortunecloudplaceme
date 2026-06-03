@@ -43,7 +43,7 @@ export default function CreateDrive() {
       setLoading(true)
 
       const payload = {
-        // company_id: 1, // temporary
+        company_id: 1, // temporary
         position: formData.position,
         package: formData.package,
         ctc: formData.ctc || null,
@@ -72,17 +72,13 @@ export default function CreateDrive() {
       })
 
     } catch (error) {
-  console.log(
-    'FULL ERROR:',
-    error.response?.data
-  )
+      console.error(error)
 
-  toast.error(
-    JSON.stringify(
-      error.response?.data
-    )
-  )
-} finally {
+      toast.error(
+        error.response?.data?.detail ||
+        'Failed to create drive'
+      )
+    } finally {
       setLoading(false)
     }
   }

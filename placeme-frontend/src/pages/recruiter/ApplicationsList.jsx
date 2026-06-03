@@ -14,110 +14,24 @@ export default function ApplicationsList() {
   }, [])
 
   const fetchApplications = async () => {
-  try {
+    try {
 
-    const response =
-      await recruiterService.getApplications()
+      const response =
+        await recruiterService.getApplications()
 
-    const data = Array.isArray(response.data)
-      ? response.data
-      : response.data.results || []
+      const data = Array.isArray(response.data)
+        ? response.data
+        : response.data.results || []
 
-    if (data.length > 0) {
       setApplications(data)
-    } else {
 
-      setApplications([
-        {
-          id: 1,
-          student_name: 'Rahul Sharma',
-          status: 'applied',
-          applied_at: new Date(),
-          drive: {
-            position: 'Frontend Developer',
-            company: {
-              name: 'Google'
-            }
-          }
-        },
-        {
-          id: 2,
-          student_name: 'Priya Patil',
-          status: 'shortlisted',
-          applied_at: new Date(),
-          drive: {
-            position: 'Backend Developer',
-            company: {
-              name: 'Microsoft'
-            }
-          }
-        },
-        {
-          id: 3,
-          student_name: 'Aditya Randive',
-          status: 'interviewed',
-          applied_at: new Date(),
-          drive: {
-            position: 'Full Stack Developer',
-            company: {
-              name: 'Amazon'
-            }
-          }
-        },
-        {
-          id: 4,
-          student_name: 'Yash Raj',
-          status: 'selected',
-          applied_at: new Date(),
-          drive: {
-            position: 'Software Engineer',
-            company: {
-              name: 'Meta'
-            }
-          }
-        },
-        {
-          id: 5,
-          student_name: 'Islam Khan',
-          status: 'rejected',
-          applied_at: new Date(),
-          drive: {
-            position: 'Data Analyst',
-            company: {
-              name: 'Netflix'
-            }
-          }
-        }
-      ])
+    } catch (error) {
+      console.error(error)
+      toast.error('Failed to load applications')
+    } finally {
+      setLoading(false)
     }
-
-  } catch (error) {
-
-    console.error(error)
-
-    setApplications([
-      {
-        id: 1,
-        student_name: 'Demo Student',
-        status: 'applied',
-        applied_at: new Date(),
-        drive: {
-          position: 'Software Engineer',
-          company: {
-            name: 'Demo Company'
-          }
-        }
-      }
-    ])
-
-    toast.error(
-      'Using demo application data'
-    )
-
-  } finally {
-    setLoading(false)
   }
-}
 
   const updateStatus = async (
     id,

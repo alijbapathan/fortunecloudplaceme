@@ -1,13 +1,8 @@
 from rest_framework import serializers
+from django.contrib.auth import get_user_model
 
-from django.contrib.auth import (
-    get_user_model
-)
-
-from .models import (
-    User,
-    Resume
-)
+from .models import User, Resume
+from placement.models import Company
 
 User = get_user_model()
 
@@ -16,12 +11,11 @@ User = get_user_model()
 # USER SERIALIZER
 # ============================================
 
-class UserSerializer(
-    serializers.ModelSerializer
-):
+class UserSerializer(serializers.ModelSerializer):
+
+    company_name = serializers.SerializerMethodField()
 
     class Meta:
-
         model = User
 
         fields = [
@@ -31,12 +25,17 @@ class UserSerializer(
             'first_name',
             'last_name',
             'role',
-            'phone'
+            'phone',
+            'company_name'
         ]
+    def get_company_name(self, obj):
 
-        read_only_fields = [
-            'id'
-        ]
+        if hasattr(obj, 'company'):
+            return obj.company.name
+
+        return None
+
+        # read_only_fields = ['id']
 
 
 # ============================================
@@ -49,20 +48,22 @@ class UserRegistrationSerializer(
 
     password = serializers.CharField(
         write_only=True,
-        required=True,
-        style={
-            'input_type':
-                'password'
-        }
+        required=True
     )
 
     password2 = serializers.CharField(
         write_only=True,
-        required=True,
-        style={
-            'input_type':
-                'password'
-        }
+        required=True
+    )
+
+    company_name = serializers.CharField(
+        required=False,
+        allow_blank=True
+    )
+
+    company_website = serializers.URLField(
+        required=False,
+        allow_blank=True
     )
 
     class Meta:
@@ -77,7 +78,9 @@ class UserRegistrationSerializer(
             'first_name',
             'last_name',
             'role',
-            'phone'
+            'phone',
+            'company_name',
+            'company_website'
         ]
 
     # ========================================
@@ -86,16 +89,12 @@ class UserRegistrationSerializer(
 
     def validate(self, data):
 
-        if (
-            data['password']
-            !=
-            data['password2']
-        ):
+        if data['password'] != data['password2']:
 
             raise serializers.ValidationError(
                 {
-                    "password":
-                        "Passwords must match."
+                    'password':
+                        'Passwords must match.'
                 }
             )
 
@@ -105,19 +104,24 @@ class UserRegistrationSerializer(
     # CREATE USER
     # ========================================
 
-    def create(
-        self,
-        validated_data
-    ):
+    def create(self, validated_data):
+
+        company_name = validated_data.pop(
+            'company_name',
+            ''
+        )
+
+        company_website = validated_data.pop(
+            'company_website',
+            ''
+        )
 
         validated_data.pop(
             'password2'
         )
 
-        password = (
-            validated_data.pop(
-                'password'
-            )
+        password = validated_data.pop(
+            'password'
         )
 
         user = User(
@@ -129,6 +133,18 @@ class UserRegistrationSerializer(
         )
 
         user.save()
+
+        # Recruiter => create company automatically
+        if (
+            user.role == 'recruiter'
+            and company_name
+        ):
+
+            Company.objects.create(
+                name=company_name,
+                website=company_website,
+                recruiter=user
+            )
 
         return user
 
@@ -177,31 +193,21 @@ class ChangePasswordSerializer(
     serializers.Serializer
 ):
 
-    current_password = (
-        serializers.CharField(
-            required=True,
-            write_only=True
-        )
+    current_password = serializers.CharField(
+        required=True,
+        write_only=True
     )
 
-    new_password = (
-        serializers.CharField(
-            required=True,
-            write_only=True,
-            min_length=6
-        )
+    new_password = serializers.CharField(
+        required=True,
+        write_only=True,
+        min_length=6
     )
 
-    confirm_password = (
-        serializers.CharField(
-            required=True,
-            write_only=True
-        )
+    confirm_password = serializers.CharField(
+        required=True,
+        write_only=True
     )
-
-    # ========================================
-    # VALIDATE PASSWORDS
-    # ========================================
 
     def validate(self, data):
 

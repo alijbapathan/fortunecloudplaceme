@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import Company, Drive, Application
+from .models import Company, Drive, Application,InterviewSchedule
 
 User = get_user_model()
 
@@ -8,8 +8,19 @@ User = get_user_model()
 class CompanySerializer(serializers.ModelSerializer):
     """Serializer for Company model"""
 
+    recruiter_username = serializers.CharField(
+        source='recruiter.username',
+        read_only=True
+    )
+
+    recruiter_email = serializers.CharField(
+        source='recruiter.email',
+        read_only=True
+    )
+
     class Meta:
         model = Company
+
         fields = [
             'id',
             'name',
@@ -18,11 +29,21 @@ class CompanySerializer(serializers.ModelSerializer):
             'description',
             'location',
             'industry',
+            'recruiter',
+            'recruiter_username',
+            'recruiter_email',
             'created_at',
             'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
 
+        read_only_fields = [
+            'id',
+            'recruiter',
+            'recruiter_username',
+            'recruiter_email',
+            'created_at',
+            'updated_at'
+        ]
 
 class DriveSerializer(serializers.ModelSerializer):
     """Serializer for Drive model"""
@@ -181,3 +202,18 @@ class ApplicationDetailSerializer(serializers.ModelSerializer):
             student=student,
             **validated_data
         )
+
+
+class InterviewScheduleSerializer(
+    serializers.ModelSerializer
+):
+
+    student_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = InterviewSchedule
+
+        fields = '__all__'
+
+    def get_student_name(self, obj):
+        return obj.application.student.username
