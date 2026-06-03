@@ -1,186 +1,367 @@
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
+import { toast } from 'react-toastify'
 import * as Icons from 'lucide-react'
-import { DashboardCard } from '../components/DashboardCard'
+
 import { Button } from '../components/Button'
 import { Badge } from '../components/Badge'
+import { auth } from '../services/apiClient'
 
 export const ResumeBuilder = () => {
-  const resumeSections = [
-    { id: 1, title: 'Personal Information', icon: 'User', status: 'completed', fields: ['Name', 'Email', 'Phone'] },
-    { id: 2, title: 'Education', icon: 'BookOpen', status: 'completed', fields: ['Degree', 'College', 'CGPA'] },
-    { id: 3, title: 'Experience', icon: 'Briefcase', status: 'pending', fields: ['Company', 'Position', 'Duration'] },
-    { id: 4, title: 'Skills', icon: 'Zap', status: 'pending', fields: ['Technical', 'Soft Skills'] },
-    { id: 5, title: 'Projects', icon: 'Code2', status: 'pending', fields: ['Project Name', 'Description', 'Link'] },
-    { id: 6, title: 'Certifications', icon: 'Award', status: 'pending', fields: ['Certification', 'Authority', 'Date'] }
-  ]
+  const [resumeFile, setResumeFile] = useState(null)
+  const [useProfileResume, setUseProfileResume] =
+    useState(false)
+  const [jobDescription, setJobDescription] =
+    useState('')
+  const [analyzing, setAnalyzing] = useState(false)
+  const [result, setResult] = useState(null)
+  const [lastScore, setLastScore] = useState(null)
 
-  const IconComponent = ({ name, className = 'w-5 h-5' }) => {
-    const icon = Icons[name]
-    return icon ? icon({ className }) : null
-  }
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.2
+  useEffect(() => {
+    const fetchLastScore = async () => {
+      try {
+        const response =
+          await auth.getResumeScore()
+        if (response.data?.resume_score) {
+          setLastScore(
+            response.data.resume_score
+          )
+        }
+      } catch {
+        // no saved score yet
       }
+    }
+
+    fetchLastScore()
+  }, [])
+
+  const handleAnalyze = async (e) => {
+    e.preventDefault()
+
+    if (jobDescription.trim().length < 50) {
+      toast.error(
+        'Paste a job description (at least 50 characters)'
+      )
+      return
+    }
+
+    if (!resumeFile && !useProfileResume) {
+      toast.error(
+        'Upload a resume or use your profile resume'
+      )
+      return
+    }
+
+    try {
+      setAnalyzing(true)
+      setResult(null)
+
+      const formData = new FormData()
+      formData.append(
+        'job_description',
+        jobDescription.trim()
+      )
+      formData.append(
+        'use_profile_resume',
+        useProfileResume ? 'true' : 'false'
+      )
+
+      if (resumeFile) {
+        formData.append('resume', resumeFile)
+      }
+
+      const response =
+        await auth.analyzeResume(formData)
+
+      setResult(response.data)
+      setLastScore(response.data.score)
+
+      toast.success(
+        `ATS analysis complete — score ${response.data.score}%`
+      )
+    } catch (error) {
+      const message =
+        error.response?.data?.error ||
+        'Failed to analyze resume'
+
+      toast.error(message)
+    } finally {
+      setAnalyzing(false)
     }
   }
 
-  const itemVariants = {
-    hidden: { opacity: 0, x: -20 },
-    show: { opacity: 1, x: 0, transition: { duration: 0.3 } }
+  const getScoreColor = (score) => {
+    if (score >= 80) return 'text-emerald-600'
+    if (score >= 65) return 'text-indigo-600'
+    if (score >= 50) return 'text-amber-600'
+    return 'text-red-600'
+  }
+
+  const getScoreRing = (score) => {
+    if (score >= 80) return 'border-emerald-500'
+    if (score >= 65) return 'border-indigo-500'
+    if (score >= 50) return 'border-amber-500'
+    return 'border-red-500'
+  }
+
+  const priorityStyles = {
+    high: 'border-red-200 bg-red-50',
+    medium: 'border-amber-200 bg-amber-50',
+    low: 'border-slate-200 bg-slate-50',
   }
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-8"
       >
-        <h1 className="text-4xl font-bold text-slate-900 mb-2">Resume Builder</h1>
-        <p className="text-slate-600">Create an ATS-optimized resume to impress recruiters</p>
+        <h1 className="text-4xl font-bold text-slate-900 mb-2">
+          ATS Resume Analyzer
+        </h1>
+        <p className="text-slate-600 max-w-2xl">
+          Upload your resume and paste a job description.
+          Get an ATS-style match score and tailored
+          suggestions to improve your chances.
+        </p>
+
+        {lastScore != null && (
+          <p className="text-sm text-slate-500 mt-3">
+            Last saved score:{' '}
+            <span className="font-semibold text-indigo-600">
+              {lastScore}%
+            </span>
+          </p>
+        )}
       </motion.div>
 
-      {/* Progress Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="rounded-2xl border border-slate-200 backdrop-blur-xl bg-white p-6"
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-slate-900">Resume Completion</h3>
-          <span className="text-2xl font-bold text-indigo-600">50%</span>
-        </div>
-        <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: '50%' }}
-            transition={{ duration: 0.8, ease: 'easeOut' }}
-            className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"
-          />
-        </div>
-        <p className="text-sm text-slate-600 mt-3">Complete 3 more sections to unlock recommendations</p>
-      </motion.div>
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+        <motion.form
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          onSubmit={handleAnalyze}
+          className="rounded-3xl border border-slate-200 bg-white p-8 space-y-6"
+        >
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              Resume file
+            </label>
+            <input
+              type="file"
+              accept=".pdf,.docx"
+              disabled={useProfileResume}
+              onChange={(e) => {
+                setResumeFile(
+                  e.target.files?.[0] || null
+                )
+              }}
+              className="w-full p-4 rounded-2xl border border-slate-300 disabled:bg-slate-100"
+            />
+            <p className="text-xs text-slate-500 mt-2">
+              PDF or DOCX (text-based, not scanned images)
+            </p>
+          </div>
 
-      {/* Sections Grid */}
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="show"
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-      >
-        {resumeSections.map((section) => (
-          <motion.div
-            key={section.id}
-            variants={itemVariants}
-            whileHover={{ scale: 1.02 }}
-            className={`rounded-2xl border backdrop-blur-xl transition-all p-6 cursor-pointer group ${
-              section.status === 'completed'
-                ? 'border-emerald-500/30 bg-emerald-500/10 hover:border-emerald-500/50'
-                : 'border-slate-200 bg-white hover:border-indigo-300'
-            }`}
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={useProfileResume}
+              onChange={(e) => {
+                setUseProfileResume(
+                  e.target.checked
+                )
+                if (e.target.checked) {
+                  setResumeFile(null)
+                }
+              }}
+              className="w-4 h-4 rounded border-slate-300 text-indigo-600"
+            />
+            <span className="text-sm text-slate-700">
+              Use resume from my Profile instead
+            </span>
+          </label>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              Job description *
+            </label>
+            <textarea
+              rows={12}
+              value={jobDescription}
+              onChange={(e) =>
+                setJobDescription(e.target.value)
+              }
+              placeholder="Paste the full job description here — include required skills, responsibilities, and qualifications..."
+              className="w-full p-4 rounded-2xl border border-slate-300 focus:border-indigo-500 focus:outline-none resize-y min-h-[200px]"
+              required
+            />
+            <p className="text-xs text-slate-500 mt-2">
+              {jobDescription.trim().length} / 50 min characters
+            </p>
+          </div>
+
+          <Button
+            type="submit"
+            variant="primary"
+            className="w-full"
+            disabled={analyzing}
           >
-            {/* Icon & Title */}
-            <div className="flex items-start justify-between mb-4">
-              <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                section.status === 'completed'
-                  ? 'bg-emerald-500/20'
-                  : 'bg-slate-100'
-              }`}>
-                <IconComponent name={section.icon} className={`w-6 h-6 ${
-                  section.status === 'completed'
-                    ? 'text-emerald-400'
-                    : 'text-slate-600 group-hover:text-indigo-600 transition-colors'
-                }`} />
-              </div>
-              {section.status === 'completed' && (
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center"
+            {analyzing ? (
+              <>
+                <Icons.Loader2 className="w-4 h-4 animate-spin" />
+                Analyzing...
+              </>
+            ) : (
+              <>
+                <Icons.Sparkles className="w-4 h-4" />
+                Analyze for this job
+              </>
+            )}
+          </Button>
+        </motion.form>
+
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="space-y-6"
+        >
+          {!result && !analyzing && (
+            <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-12 text-center">
+              <Icons.Target className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+              <p className="text-slate-600 font-medium">
+                Your ATS report will appear here
+              </p>
+              <p className="text-sm text-slate-500 mt-2">
+                Keyword match, section checks, and
+                improvement tips
+              </p>
+            </div>
+          )}
+
+          {analyzing && (
+            <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center">
+              <div className="w-12 h-12 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-slate-600">
+                Reading resume and comparing to job
+                description...
+              </p>
+            </div>
+          )}
+
+          {result && (
+            <>
+              <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center">
+                <div
+                  className={`mx-auto w-36 h-36 rounded-full border-8 flex flex-col items-center justify-center ${getScoreRing(result.score)}`}
                 >
-                  <Icons.Check className="w-4 h-4 text-white" />
-                </motion.div>
-              )}
-            </div>
-
-            <h3 className="text-lg font-bold text-slate-900 mb-2">{section.title}</h3>
-
-            {/* Fields Preview */}
-            <div className="space-y-2 mb-4">
-              {section.fields.map((field, idx) => (
-                <p key={idx} className="text-xs text-slate-600">
-                  ✓ {field}
+                  <span
+                    className={`text-4xl font-black ${getScoreColor(result.score)}`}
+                  >
+                    {result.score}%
+                  </span>
+                  <span className="text-sm text-slate-500 mt-1">
+                    ATS score
+                  </span>
+                </div>
+                <p className="text-xl font-bold text-slate-900 mt-4">
+                  {result.grade}
                 </p>
-              ))}
-            </div>
+                <p className="text-sm text-slate-500 mt-1">
+                  {result.word_count} words detected
+                  {result.resume_source === 'profile'
+                    ? ' · from profile resume'
+                    : ' · from upload'}
+                </p>
+              </div>
 
-            {/* Action Button */}
-            <motion.button
-              whileHover={{ x: 5 }}
-              whileTap={{ scale: 0.95 }}
-              className="w-full py-2 px-4 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-900 transition-all text-sm font-medium flex items-center justify-center gap-2 group"
-            >
-              <span>{section.status === 'completed' ? 'Edit' : 'Complete'}</span>
-              <Icons.ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </motion.button>
-          </motion.div>
-        ))}
-      </motion.div>
+              <div className="rounded-3xl border border-slate-200 bg-white p-8">
+                <h3 className="text-lg font-bold text-slate-900 mb-4">
+                  Score breakdown
+                </h3>
+                <div className="space-y-4">
+                  {Object.entries(
+                    result.breakdown || {}
+                  ).map(([key, value]) => (
+                    <div key={key}>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="text-slate-600 capitalize">
+                          {key.replace(/_/g, ' ')}
+                        </span>
+                        <span className="font-semibold text-slate-900">
+                          {value}%
+                        </span>
+                      </div>
+                      <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500"
+                          style={{
+                            width: `${value}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-      {/* Features Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className="rounded-2xl border border-slate-200 backdrop-blur-xl bg-white p-8"
-      >
-        <h3 className="text-2xl font-bold text-slate-900 mb-6">Resume Features</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[
-            { icon: 'Check', text: 'ATS-Optimized Templates' },
-            { icon: 'FileJson', text: 'One-Click Export' },
-            { icon: 'Zap', text: 'AI Content Suggestions' },
-            { icon: 'Eye', text: 'Live Preview' },
-            { icon: 'Share2', text: 'Easy Sharing' },
-            { icon: 'TrendingUp', text: 'Performance Analytics' }
-          ].map((feature, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 + idx * 0.05 }}
-              className="flex items-center gap-3 p-3 rounded-lg bg-slate-100 hover:bg-slate-200 transition-all"
-            >
-              <IconComponent name={feature.icon} className="w-5 h-5 text-indigo-600" />
-              <span className="text-sm text-slate-900">{feature.text}</span>
-            </motion.div>
-          ))}
-        </div>
-      </motion.div>
+              <div className="rounded-3xl border border-slate-200 bg-white p-8">
+                <h3 className="text-lg font-bold text-slate-900 mb-4">
+                  Keywords
+                </h3>
+                <p className="text-sm text-slate-600 mb-3">
+                  Matched ({result.matched_keywords?.length || 0})
+                </p>
+                <div className="flex flex-wrap gap-2 mb-6">
+                  {(result.matched_keywords || []).length > 0 ? (
+                    result.matched_keywords.map((kw) => (
+                      <Badge key={kw} variant="success">
+                        {kw}
+                      </Badge>
+                    ))
+                  ) : (
+                    <span className="text-sm text-slate-500">
+                      None yet
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-slate-600 mb-3">
+                  Missing ({result.missing_keywords?.length || 0})
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {(result.missing_keywords || []).map((kw) => (
+                    <Badge key={kw} variant="warning">
+                      {kw}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
 
-      {/* Action Buttons */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        className="flex gap-4 justify-center"
-      >
-        <Button variant="primary">
-          <Icons.Download className="w-4 h-4" />
-          Download Resume
-        </Button>
-        <Button variant="secondary">
-          <Icons.Share2 className="w-4 h-4" />
-          Share Profile
-        </Button>
-      </motion.div>
+              <div className="rounded-3xl border border-slate-200 bg-white p-8">
+                <h3 className="text-lg font-bold text-slate-900 mb-4">
+                  Suggestions
+                </h3>
+                <div className="space-y-3">
+                  {(result.suggestions || []).map(
+                    (item, index) => (
+                      <div
+                        key={index}
+                        className={`p-4 rounded-2xl border ${priorityStyles[item.priority] || priorityStyles.medium}`}
+                      >
+                        <p className="text-sm font-semibold text-slate-800 capitalize mb-1">
+                          {item.type} · {item.priority}
+                        </p>
+                        <p className="text-sm text-slate-700">
+                          {item.message}
+                        </p>
+                      </div>
+                    )
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </motion.div>
+      </div>
     </div>
   )
 }

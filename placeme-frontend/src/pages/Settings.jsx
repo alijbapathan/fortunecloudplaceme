@@ -1,197 +1,458 @@
+import { useEffect, useState } from 'react'
+
 import { motion } from 'framer-motion'
+
 import * as Icons from 'lucide-react'
-import { DashboardCard } from '../components/DashboardCard'
+
 import { Button } from '../components/Button'
 
-export const Settings = () => {
-  const settingsCategories = [
-    {
-      id: 1,
-      title: 'Account Settings',
-      icon: 'User',
-      items: [
-        { label: 'Email Address', value: 'student@example.com', type: 'email' },
-        { label: 'Phone Number', value: '+91 98765 43210', type: 'phone' },
-        { label: 'Password', value: '••••••••', type: 'password' }
-      ]
-    },
-    {
-      id: 2,
-      title: 'Notification Preferences',
-      icon: 'Bell',
-      items: [
-        { label: 'Email Notifications', value: true, type: 'toggle' },
-        { label: 'Push Notifications', value: true, type: 'toggle' },
-        { label: 'SMS Alerts', value: false, type: 'toggle' },
-        { label: 'Interview Reminders', value: true, type: 'toggle' }
-      ]
-    },
-    {
-      id: 3,
-      title: 'Privacy Settings',
-      icon: 'Lock',
-      items: [
-        { label: 'Profile Visibility', value: 'Public', type: 'select', options: ['Public', 'Private', 'Recruiters Only'] },
-        { label: 'Show Recent Activity', value: true, type: 'toggle' },
-        { label: 'Allow Interview Invites', value: true, type: 'toggle' },
-        { label: 'Data Sharing', value: false, type: 'toggle' }
-      ]
-    }
-  ]
+import { auth } from '../services/apiClient'
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.2
+export const Settings = () => {
+
+  // ============================================
+  // PROFILE STATE
+  // ============================================
+
+  const [loading, setLoading] =
+    useState(true)
+
+  const [saving, setSaving] =
+    useState(false)
+
+  const [passwordSaving,
+    setPasswordSaving] =
+      useState(false)
+
+  const [userData, setUserData] =
+    useState({
+      first_name: '',
+      last_name: '',
+      username: '',
+      email: '',
+      phone: '',
+      role: '',
+    })
+
+  // ============================================
+  // PASSWORD STATE
+  // ============================================
+
+  const [passwordData,
+    setPasswordData] =
+      useState({
+        current_password: '',
+        new_password: '',
+        confirm_password: '',
+      })
+
+  // ============================================
+  // FETCH PROFILE
+  // ============================================
+
+  useEffect(() => {
+    fetchProfile()
+  }, [])
+
+  const fetchProfile = async () => {
+
+    try {
+
+      setLoading(true)
+
+      const response =
+        await auth.getProfile()
+
+      setUserData(
+        response.data
+      )
+
+    } catch (error) {
+
+      console.error(
+        'Error fetching profile:',
+        error
+      )
+
+    } finally {
+
+      setLoading(false)
+    }
+  }
+
+  // ============================================
+  // HANDLE PROFILE CHANGE
+  // ============================================
+
+  const handleChange = (e) => {
+
+    const { name, value } =
+      e.target
+
+    setUserData((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
+  }
+
+  // ============================================
+  // HANDLE PASSWORD CHANGE
+  // ============================================
+
+  const handlePasswordChange =
+    (e) => {
+
+      const { name, value } =
+        e.target
+
+      setPasswordData((prev) => ({
+        ...prev,
+        [name]: value,
+      }))
+    }
+
+  // ============================================
+  // SAVE PROFILE
+  // ============================================
+
+  const handleSave = async () => {
+
+    try {
+
+      setSaving(true)
+
+      await auth.updateProfile(
+        userData
+      )
+
+      alert(
+        'Profile updated successfully 😎🔥'
+      )
+
+    } catch (error) {
+
+      console.error(
+        'Error updating profile:',
+        error.response?.data ||
+        error
+      )
+
+      alert(
+        'Failed to update profile'
+      )
+
+    } finally {
+
+      setSaving(false)
+    }
+  }
+
+  // ============================================
+  // CHANGE PASSWORD
+  // ============================================
+
+  const handlePasswordSave =
+    async () => {
+
+      try {
+
+        if (
+          !passwordData.current_password ||
+          !passwordData.new_password ||
+          !passwordData.confirm_password
+        ) {
+
+          alert(
+            'Please fill all password fields'
+          )
+
+          return
+        }
+
+        if (
+          passwordData.new_password
+          !==
+          passwordData.confirm_password
+        ) {
+
+          alert(
+            'New passwords do not match'
+          )
+
+          return
+        }
+
+        setPasswordSaving(true)
+
+        await auth.changePassword(
+          passwordData
+        )
+
+        alert(
+          'Password changed successfully 😎🔥'
+        )
+
+        setPasswordData({
+          current_password: '',
+          new_password: '',
+          confirm_password: '',
+        })
+
+      } catch (error) {
+
+        console.error(
+          'Error changing password:',
+          error.response?.data ||
+          error
+        )
+
+        alert(
+          error.response?.data
+            ?.current_password
+          ||
+          'Failed to change password'
+        )
+
+      } finally {
+
+        setPasswordSaving(false)
       }
     }
-  }
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.3 } }
-  }
+  // ============================================
+  // LOADING
+  // ============================================
 
-  const IconComponent = ({ name, className = 'w-5 h-5' }) => {
-    const icon = Icons[name]
-    return icon ? icon({ className }) : null
+  if (loading) {
+
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+
+        <div className="text-center">
+
+          <div className="w-12 h-12 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4" />
+
+          <p className="text-slate-600">
+            Loading settings...
+          </p>
+
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-8 max-w-4xl">
-      {/* Header */}
+    <div className="space-y-8 max-w-5xl">
+
+      {/* HEADER */}
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-8"
+        initial={{
+          opacity: 0,
+          y: -20,
+        }}
+        animate={{
+          opacity: 1,
+          y: 0,
+        }}
       >
-        <h1 className="text-4xl font-bold text-slate-900 mb-2">Settings</h1>
-        <p className="text-slate-600">Manage your account, preferences, and privacy</p>
+
+        <h1 className="text-4xl font-bold text-slate-900 mb-2">
+
+          Settings
+        </h1>
+
+        <p className="text-slate-600">
+          Manage your account settings
+        </p>
+
       </motion.div>
 
-      {/* Settings Sections */}
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="show"
-        className="space-y-6"
-      >
-        {settingsCategories.map((category) => (
-          <motion.div
-            key={category.id}
-            variants={itemVariants}
-            className="rounded-2xl border border-slate-200 backdrop-blur-xl bg-white overflow-hidden"
+      {/* PROFILE SETTINGS */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-8">
+
+        <div className="flex items-center gap-4 mb-8">
+
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+
+            <Icons.User className="w-7 h-7 text-white" />
+
+          </div>
+
+          <div>
+
+            <h2 className="text-2xl font-bold text-slate-900">
+
+              Account Settings
+
+            </h2>
+
+            <p className="text-slate-600">
+              Update your profile
+            </p>
+
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+          <input
+            type="text"
+            name="first_name"
+            value={userData.first_name}
+            onChange={handleChange}
+            placeholder="First Name"
+            className="w-full rounded-xl border border-slate-300 px-4 py-3"
+          />
+
+          <input
+            type="text"
+            name="last_name"
+            value={userData.last_name}
+            onChange={handleChange}
+            placeholder="Last Name"
+            className="w-full rounded-xl border border-slate-300 px-4 py-3"
+          />
+
+          <input
+            type="email"
+            name="email"
+            value={userData.email}
+            onChange={handleChange}
+            placeholder="Email"
+            className="w-full rounded-xl border border-slate-300 px-4 py-3"
+          />
+
+          <input
+            type="text"
+            name="phone"
+            value={userData.phone}
+            onChange={handleChange}
+            placeholder="Phone"
+            className="w-full rounded-xl border border-slate-300 px-4 py-3"
+          />
+
+        </div>
+
+        <div className="flex justify-end mt-6">
+
+          <Button
+            variant="primary"
+            onClick={handleSave}
+            disabled={saving}
           >
-            {/* Category Header */}
-            <div className="flex items-center gap-4 p-6 border-b border-slate-200 bg-slate-50">
-              <div className="w-10 h-10 rounded-lg bg-slate-200 flex items-center justify-center">
-                <IconComponent name={category.icon} className="w-5 h-5 text-indigo-600" />
-              </div>
-              <h2 className="text-xl font-bold text-slate-900">{category.title}</h2>
-            </div>
 
-            {/* Settings Items */}
-            <div className="divide-y divide-slate-200">
-              {category.items.map((item, idx) => (
-                <motion.div
-                  key={idx}
-                  whileHover={{ backgroundColor: 'rgba(255, 255, 255, 0.02)' }}
-                  className="p-6 flex items-center justify-between hover:transition-all"
-                >
-                  <div>
-                    <p className="text-white font-medium">{item.label}</p>
-                    {item.type === 'email' || item.type === 'phone' || item.type === 'password' ? (
-                      <p className="text-sm text-slate-600 mt-1">{item.value}</p>
-                    ) : null}
-                  </div>
+            {saving ? (
+              <>
+                <Icons.Loader2 className="w-4 h-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Icons.Save className="w-4 h-4" />
+                Save Profile
+              </>
+            )}
 
-                  {/* Toggle Switch */}
-                  {item.type === 'toggle' && (
-                    <motion.button
-                      whileTap={{ scale: 0.95 }}
-                      className={`w-12 h-6 rounded-full transition-all ${
-                        item.value
-                          ? 'bg-emerald-500'
-                          : 'bg-slate-400'
-                      }`}
-                    >
-                      <motion.div
-                        animate={{ x: item.value ? 24 : 2 }}
-                        className="w-5 h-5 rounded-full bg-white mt-0.5 ml-0.5"
-                      />
-                    </motion.button>
-                  )}
-
-                  {/* Select Dropdown */}
-                  {item.type === 'select' && (
-                    <select
-                      defaultValue={item.value}
-                      className="px-4 py-2 rounded-lg bg-slate-100 border border-slate-200 text-slate-900 text-sm focus:outline-none focus:border-indigo-400 cursor-pointer hover:border-slate-300 transition-all"
-                    >
-                      {item.options?.map((opt) => (
-                        <option key={opt} value={opt} className="bg-slate-900">
-                          {opt}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-
-                  {/* Edit Button for email/phone/password */}
-                  {(item.type === 'email' || item.type === 'phone' || item.type === 'password') && (
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-900 transition-all text-sm font-medium"
-                    >
-                      Edit
-                    </motion.button>
-                  )}
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        ))}
-      </motion.div>
-
-      {/* Danger Zone */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-        className="rounded-2xl border border-red-500/30 backdrop-blur-xl bg-red-500/10 p-6"
-      >
-        <h3 className="text-xl font-bold text-red-600 mb-2">Danger Zone</h3>
-        <p className="text-slate-600 text-sm mb-4">Irreversible actions</p>
-        <div className="flex flex-col gap-3">
-          <Button variant="outline">
-            <Icons.LogOut className="w-4 h-4" />
-            Sign Out from All Devices
-          </Button>
-          <Button variant="danger">
-            <Icons.Trash2 className="w-4 h-4" />
-            Delete My Account
           </Button>
         </div>
-      </motion.div>
+      </div>
 
-      {/* Save Button */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.6 }}
-        className="flex gap-4 py-6 border-t border-slate-200"
-      >
-        <Button variant="primary">
-          <Icons.Save className="w-4 h-4" />
-          Save Changes
-        </Button>
-        <Button variant="secondary">
-          Reset to Defaults
-        </Button>
-      </motion.div>
+      {/* CHANGE PASSWORD */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-8">
+
+        <div className="flex items-center gap-4 mb-8">
+
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center">
+
+            <Icons.Lock className="w-7 h-7 text-white" />
+
+          </div>
+
+          <div>
+
+            <h2 className="text-2xl font-bold text-slate-900">
+
+              Change Password
+
+            </h2>
+
+            <p className="text-slate-600">
+              Secure your account
+            </p>
+
+          </div>
+        </div>
+
+        <div className="space-y-4">
+
+          <input
+            type="password"
+            name="current_password"
+            value={
+              passwordData.current_password
+            }
+            onChange={
+              handlePasswordChange
+            }
+            placeholder="Current Password"
+            className="w-full rounded-xl border border-slate-300 px-4 py-3"
+          />
+
+          <input
+            type="password"
+            name="new_password"
+            value={
+              passwordData.new_password
+            }
+            onChange={
+              handlePasswordChange
+            }
+            placeholder="New Password"
+            className="w-full rounded-xl border border-slate-300 px-4 py-3"
+          />
+
+          <input
+            type="password"
+            name="confirm_password"
+            value={
+              passwordData.confirm_password
+            }
+            onChange={
+              handlePasswordChange
+            }
+            placeholder="Confirm New Password"
+            className="w-full rounded-xl border border-slate-300 px-4 py-3"
+          />
+
+        </div>
+
+        <div className="flex justify-end mt-6">
+
+          <Button
+            variant="danger"
+            onClick={
+              handlePasswordSave
+            }
+            disabled={
+              passwordSaving
+            }
+          >
+
+            {passwordSaving ? (
+              <>
+                <Icons.Loader2 className="w-4 h-4 animate-spin" />
+                Updating...
+              </>
+            ) : (
+              <>
+                <Icons.Lock className="w-4 h-4" />
+                Change Password
+              </>
+            )}
+
+          </Button>
+        </div>
+      </div>
     </div>
   )
 }

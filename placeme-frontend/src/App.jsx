@@ -16,31 +16,12 @@ import { InterviewExperience } from './pages/InterviewExperience'
 import { ResumeBuilder } from './pages/ResumeBuilder'
 import { NotificationsPage } from './pages/Notifications'
 import { Settings } from './pages/Settings'
+import { Training } from './pages/Training'
 
 // Components & Layouts
 import Navbar from './components/Navbar'
 import PrivateRoute from './components/PrivateRoute'
 import { MainLayout } from './layouts/MainLayout'
-
-
-//rr tpo api services
-import TPOLayout from './layouts/TPOLayout'
-import Students from './pages/tpo/Students'
-import TPODashboard from './pages/tpo/TPODashboard'
-import TPOCompanies from './pages/tpo/Companies'
-import TPODrives from './pages/tpo/Drives'
-import TPOApplications from './pages/tpo/Applications'
-import CompanyForm from './pages/tpo/CompanyForm'
-import DriveForm from './pages/tpo/DriveForm'
-import EditDrive from './pages/tpo/EditDrive'
-import EditCompany from './pages/tpo/EditCompany'
-import ApplicationDetails from './pages/tpo/ApplicationDetails'
-import TPOCourses from './pages/tpo/TPOCourses'
-import CourseForm from './pages/tpo/CourseForm'
-import TPOMockTests from './pages/tpo/TPOMockTests'
-import MockTestForm from './pages/tpo/MockTestForm'
-
-////////////////////////////////////////////////////
 
 function App() {
   // Check localStorage directly for login status
@@ -68,48 +49,7 @@ function App() {
               <Route path="/resume" element={<ResumeBuilder />} />
               <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/settings" element={<Settings />} />
-            </Route>
-
-             {/* TPO */}
-
-             <Route element={<TPOLayout />}>
-
-              <Route path="/tpo/dashboard" element={<TPODashboard />} />
-              <Route path="/tpo/companies" element={<TPOCompanies />} />
-              <Route path="/tpo/drives" element={<TPODrives />} />
-              <Route path="/tpo/applications" element={<TPOApplications />} />
-              <Route path="/tpo/students" element={<Students />} />
-              <Route path="/tpo/companies/create" element={<CompanyForm />} />
-              <Route path="/tpo/drives/create" element={<DriveForm />} />
-              <Route path="/tpo/drives/edit/:id" element={<EditDrive />} />
-              <Route path="/tpo/companies/edit/:id" element={<EditCompany />} />
-              <Route path="/tpo/applications/:id" element={<ApplicationDetails />} />
-              <Route
-  path="/tpo/courses"
-  element={<TPOCourses />}/>
-  <Route
-  path="/tpo/courses/create"
-  element={<CourseForm />}
-/>
-<Route
-  path="/tpo/courses/edit/:id"
-  element={<CourseForm />}
-/>
-
-<Route
-  path="/tpo/mock-tests"
-  element={<TPOMockTests />}
-/>
-
-<Route
-  path="/tpo/mock-tests/create"
-  element={<MockTestForm />}
-/>
-
-<Route
-  path="/tpo/mock-tests/edit/:id"
-  element={<MockTestForm />}
-/>
+              <Route path="/training" element={<Training />} />
             </Route>
           </Route>
 

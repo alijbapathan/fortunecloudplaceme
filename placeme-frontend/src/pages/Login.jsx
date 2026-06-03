@@ -33,32 +33,16 @@ const Login = () => {
       localStorage.setItem('refresh_token', refresh)
 
       // Fetch user profile
-      // try {
-      //   const userRes = await auth.getProfile()
-      //   login(userRes.data, access, refresh)
-      // } catch (err) {
-      //   console.error('Error fetching profile:', err)
-      //   login({ username: formData.username }, access, refresh)
-      // }
-
-      // rr Fetch user profile
-      let userData = { username: formData.username }
       try {
         const userRes = await auth.getProfile()
-        userData = userRes.data
+        login(userRes.data, access, refresh)
       } catch (err) {
-        console.error('Profile fetch failed:', err)
+        console.error('Error fetching profile:', err)
+        login({ username: formData.username }, access, refresh)
       }
 
-login(userData, access, refresh)
       toast.success('Login successful!')
-      // navigate('/dashboard')
-      const role = userData?.role//rr added role based redirection
-      if (role === 'tpo') {
-        navigate('/tpo/dashboard')
-      } else {
-        navigate('/dashboard')
-      }
+      navigate('/dashboard')
     } catch (error) {
       console.error('Login error:', error.response?.data || error.message)
       const errorMsg = error.response?.data?.detail || 'Invalid username or password'

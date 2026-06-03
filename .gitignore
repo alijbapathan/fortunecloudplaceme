@@ -1,34 +1,22 @@
 # Python
 .venv/
-venv/
-env/
-*.py[cod]
 __pycache__/
-*.egg-info/
-.pytest_cache/
-*.sqlite3
+*.pyc
 db.sqlite3
 
 # Node
 node_modules/
-npm-debug.log
-yarn-error.log
 dist/
-.env
-.env.local
-.env.*.local
+.vite/
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+# Environment
+.env
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Django
-*.log
-local_settings.py
+media/
+*.sqlite3
+*.pyc
+__pycache__/
