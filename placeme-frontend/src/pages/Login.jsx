@@ -35,9 +35,6 @@ const Login = () => {
     localStorage.setItem('access_token', access)
 localStorage.setItem('refresh_token', refresh)
 
-console.log('TOKEN SAVED:', access)
-
-    // Store tokens
     setAuthToken(access)
 
     useAuthStore.setState({
@@ -45,30 +42,26 @@ console.log('TOKEN SAVED:', access)
       refreshToken: refresh,
     })
 
-    // Small delay
-    await new Promise(resolve => setTimeout(resolve, 100))
-
-    // Get current user
-    const userRes = await auth.getProfile()
-
-    console.log('USER DATA:', userRes.data)
-    console.log('ROLE:', userRes.data.role)
-
-    // Save user to store
-    login(userRes.data, access, refresh)
+    let userData = { username: formData.username }
+    try {
+      const userRes = await auth.getProfile()
+      userData = userRes.data
+      login(userData, access, refresh)
+    } catch (err) {
+      console.error('Error fetching profile:', err)
+      login(userData, access, refresh)
+    }
 
     toast.success('Login successful!')
 
-    // ROLE BASED REDIRECT
-    if (userRes.data.role === 'recruiter') {
+    if (userData.role === 'recruiter') {
       navigate('/recruiter/dashboard')
-    } else if (userRes.data.role === 'student') {
-      navigate('/dashboard')
-    } else if (userRes.data.role === 'tpo') {
-      navigate('/dashboard')
+    } else if (userData.role === 'tpo' || userData.is_tpo || userData.is_staff) {
+      navigate('/tpo')
     } else {
       navigate('/dashboard')
     }
+
 
   } catch (error) {
     console.error('Login error:', error.response?.data || error.message)

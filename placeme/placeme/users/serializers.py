@@ -1,23 +1,16 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-
-from .models import User, Resume
 from placement.models import Company
+from .models import Resume
 
 User = get_user_model()
 
 
-# ============================================
-# USER SERIALIZER
-# ============================================
-
 class UserSerializer(serializers.ModelSerializer):
-
     company_name = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-
         fields = [
             'id',
             'username',
@@ -28,50 +21,35 @@ class UserSerializer(serializers.ModelSerializer):
             'phone',
             'company_name'
         ]
+        read_only_fields = ['id']
+
     def get_company_name(self, obj):
-
-     try:
-        return obj.company.name
-
-     except Company.DoesNotExist:
-        return None
-
-        # read_only_fields = ['id']
+        try:
+            return obj.company.name
+        except Company.DoesNotExist:
+            return None
 
 
-# ============================================
-# USER REGISTRATION SERIALIZER
-# ============================================
-
-class UserRegistrationSerializer(
-    serializers.ModelSerializer
-):
-
+class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         write_only=True,
-        required=True
+        required=True,
+        style={
+            'input_type': 'password'
+        }
     )
-
     password2 = serializers.CharField(
         write_only=True,
-        required=True
+        required=True,
+        style={
+            'input_type': 'password'
+        }
     )
-
-    company_name = serializers.CharField(
-        required=False,
-        allow_blank=True
-    )
-
-
-    company_website = serializers.URLField(
-        required=False,
-        allow_blank=True
-    )
+    company_name = serializers.CharField(required=False, allow_blank=True)
+    company_website = serializers.URLField(required=False, allow_blank=True)
 
     class Meta:
-
         model = User
-
         fields = [
             'username',
             'email',
@@ -85,81 +63,36 @@ class UserRegistrationSerializer(
             'company_website'
         ]
 
-    # ========================================
-    # VALIDATE PASSWORDS
-    # ========================================
-
     def validate(self, data):
-
         if data['password'] != data['password2']:
-
-            raise serializers.ValidationError(
-                {
-                    'password':
-                        'Passwords must match.'
-                }
-            )
-
+            raise serializers.ValidationError({
+                'password': 'Passwords must match.'
+            })
         return data
 
-    # ========================================
-    # CREATE USER
-    # ========================================
-
     def create(self, validated_data):
+        company_name = validated_data.pop('company_name', '')
+        company_website = validated_data.pop('company_website', '')
+        validated_data.pop('password2')
+        password = validated_data.pop('password')
 
-        company_name = validated_data.pop(
-            'company_name',
-            ''
-        )
-
-        company_website = validated_data.pop(
-            'company_website',
-            ''
-        )
-
-        validated_data.pop(
-            'password2'
-        )
-
-        password = validated_data.pop(
-            'password'
-        )
-
-        user = User(
-            **validated_data
-        )
-
-        user.set_password(
-            password
-        )
-
+        user = User(**validated_data)
+        user.set_password(password)
         user.save()
 
-        # Recruiter => create company automatically
-        # Recruiter => create company automatically
         if user.role == 'recruiter':
-
-         Company.objects.create(
-         name=user.username,
-         recruiter=user
-    )
+            Company.objects.create(
+                name=company_name or user.username,
+                website=company_website,
+                recruiter=user
+            )
 
         return user
 
 
-# ============================================
-# RESUME SERIALIZER
-# ============================================
-
-class ResumeSerializer(
-    serializers.ModelSerializer
-):
-
+class ResumeSerializer(serializers.ModelSerializer):
     class Meta:
-
         model = Resume
-
         fields = [
             'id',
             'headline',
@@ -175,52 +108,17 @@ class ResumeSerializer(
             'updated_at',
             'created_at'
         ]
-
-        read_only_fields = [
-            'id',
-            'resume_score',
-            'updated_at',
-            'created_at'
-        ]
+        read_only_fields = ['id', 'resume_score', 'updated_at', 'created_at']
 
 
-# ============================================
-# CHANGE PASSWORD SERIALIZER
-# ============================================
-
-class ChangePasswordSerializer(
-    serializers.Serializer
-):
-
-    current_password = serializers.CharField(
-        required=True,
-        write_only=True
-    )
-
-    new_password = serializers.CharField(
-        required=True,
-        write_only=True,
-        min_length=6
-    )
-
-    confirm_password = serializers.CharField(
-        required=True,
-        write_only=True
-    )
+class ChangePasswordSerializer(serializers.Serializer):
+    current_password = serializers.CharField(required=True, write_only=True)
+    new_password = serializers.CharField(required=True, write_only=True, min_length=6)
+    confirm_password = serializers.CharField(required=True, write_only=True)
 
     def validate(self, data):
-
-        if (
-            data['new_password']
-            !=
-            data['confirm_password']
-        ):
-
-            raise serializers.ValidationError(
-                {
-                    'confirm_password':
-                        'Passwords do not match'
-                }
-            )
-
+        if data['new_password'] != data['confirm_password']:
+            raise serializers.ValidationError({
+                'confirm_password': 'Passwords do not match'
+            })
         return data

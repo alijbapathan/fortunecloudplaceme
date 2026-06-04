@@ -1,6 +1,6 @@
-from rest_framework import serializers
+﻿from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import Company, Drive, Application,InterviewSchedule
+from .models import Company, Drive, Application, InterviewSchedule
 
 User = get_user_model()
 
@@ -12,7 +12,6 @@ class CompanySerializer(serializers.ModelSerializer):
         source='recruiter.username',
         read_only=True
     )
-
     recruiter_email = serializers.CharField(
         source='recruiter.email',
         read_only=True
@@ -20,7 +19,6 @@ class CompanySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Company
-
         fields = [
             'id',
             'name',
@@ -35,7 +33,6 @@ class CompanySerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at'
         ]
-
         read_only_fields = [
             'id',
             'recruiter',
@@ -44,20 +41,19 @@ class CompanySerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at'
         ]
-class DriveSerializer(serializers.ModelSerializer):
-    company = CompanySerializer(read_only=True)
 
-    company_id = serializers.IntegerField(
-        write_only=True,
-        required=False
-    )
+
+class DriveSerializer(serializers.ModelSerializer):
+    """Serializer for Drive model"""
+
+    company = CompanySerializer(read_only=True)
+    company_id = serializers.IntegerField(write_only=True, required=False)
 
     days_left = serializers.SerializerMethodField()
     total_applications = serializers.SerializerMethodField()
 
     class Meta:
         model = Drive
-
         fields = [
             'id',
             'company',
@@ -77,7 +73,6 @@ class DriveSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at'
         ]
-
         read_only_fields = [
             'id',
             'created_at',
@@ -93,57 +88,32 @@ class DriveSerializer(serializers.ModelSerializer):
         return obj.applications.count()
 
     def create(self, validated_data):
-
-        company_id = validated_data.pop(
-            'company_id',
-            None
-        )
+        company_id = validated_data.pop('company_id', None)
 
         if company_id:
-
             try:
-                company = Company.objects.get(
-                    id=company_id
-                )
-
+                company = Company.objects.get(id=company_id)
                 validated_data['company'] = company
-
             except Company.DoesNotExist:
-
                 raise serializers.ValidationError({
-                    'company_id':
-                    'Company not found'
+                    'company_id': 'Company not found'
                 })
 
-        return super().create(
-            validated_data
-        )
+        return super().create(validated_data)
 
-    def update(
-        self,
-        instance,
-        validated_data
-    ):
+    def update(self, instance, validated_data):
+        validated_data.pop('company_id', None)
+        return super().update(instance, validated_data)
 
-        validated_data.pop(
-            'company_id',
-            None
-        )
 
-        return super().update(
-            instance,
-            validated_data
-        )
 class ApplicationListSerializer(serializers.ModelSerializer):
     """Serializer for listing applications"""
 
     drive = DriveSerializer(read_only=True)
-
     student_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Application
-
         fields = [
             'id',
             'drive',
@@ -152,7 +122,6 @@ class ApplicationListSerializer(serializers.ModelSerializer):
             'applied_at',
             'updated_at'
         ]
-
         read_only_fields = [
             'id',
             'applied_at',
@@ -167,21 +136,17 @@ class ApplicationDetailSerializer(serializers.ModelSerializer):
     """Serializer for application details"""
 
     drive = DriveSerializer(read_only=True)
-
     drive_id = serializers.PrimaryKeyRelatedField(
         queryset=Drive.objects.all(),
         source='drive',
         write_only=True
     )
-
     student = serializers.StringRelatedField(read_only=True)
-
     company_name = serializers.SerializerMethodField()
     position = serializers.SerializerMethodField()
 
     class Meta:
         model = Application
-
         fields = [
             'id',
             'student',
@@ -196,7 +161,6 @@ class ApplicationDetailSerializer(serializers.ModelSerializer):
             'applied_at',
             'updated_at'
         ]
-
         read_only_fields = [
             'id',
             'student',
@@ -212,10 +176,8 @@ class ApplicationDetailSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         student = self.context['request'].user
-
         drive = validated_data.get('drive')
 
-        # Prevent duplicate applications
         existing = Application.objects.filter(
             student=student,
             drive=drive
@@ -232,15 +194,11 @@ class ApplicationDetailSerializer(serializers.ModelSerializer):
         )
 
 
-class InterviewScheduleSerializer(
-    serializers.ModelSerializer
-):
-
+class InterviewScheduleSerializer(serializers.ModelSerializer):
     student_name = serializers.SerializerMethodField()
 
     class Meta:
         model = InterviewSchedule
-
         fields = '__all__'
 
     def get_student_name(self, obj):

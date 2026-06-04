@@ -11,6 +11,25 @@ import NotFound from './pages/NotFound'
 
 // Student Pages
 import { StudentDashboard } from './pages/StudentDashboard'
+import TPODashboard from './pages/tpo/tpoDashboard'
+import TPOCompanies from './pages/tpo/companies'
+import CompanyForm from './pages/tpo/companyForm'
+import EditCompany from './pages/tpo/EditCompany'
+import Drives from './pages/tpo/Drives'
+import DriveForm from './pages/tpo/DriveForm'
+import EditDrive from './pages/tpo/EditDrive'
+import TPOApplications from './pages/tpo/applications'
+import ApplicationDetails from './pages/tpo/applicationDetails'
+import TpoCourses from './pages/tpo/tpoCourses'
+import CourseForm from './pages/tpo/courseForm'
+import EditCourse from './pages/tpo/EditCourse'
+import TpoMockTests from './pages/tpo/TpoMockTests'
+import MockTestForm from './pages/tpo/MockTestForm'
+import EditMockTest from './pages/tpo/EditMockTest'
+import Students from './pages/tpo/students'
+import TpoEnrollments from './pages/tpo/TpoEnrollments'
+import TpoTestAttempts from './pages/tpo/TpoTestAttempts'
+import TPOProfile from './pages/tpo/tpoProfile'
 import { Profile } from './pages/Profile'
 import { PlacementDrives } from './pages/PlacementDrives'
 import { Applications } from './pages/Applications'
@@ -23,7 +42,7 @@ import { Training } from './pages/Training'
 
 // Recruiter Pages
 import ViewDrive from './pages/recruiter/ViewDrive'
-import EditDrive from './pages/recruiter/EditDrive'
+import TPOEditDrive from './pages/tpo/EditDrive'
 import RecruiterLogin from './pages/recruiter/RecruiterLogin'
 import RecruiterRegister from './pages/recruiter/RecruiterRegister'
 import RecruiterDashboard from './pages/recruiter/RecruiterDashboard'
@@ -34,10 +53,12 @@ import InterviewSchedule from './pages/recruiter/InterviewSchedule'
 import CompanyProfile from './pages/recruiter/CompanyProfile'
 import Analytics from './pages/recruiter/Analytics'
 import ApplicantProfile from './pages/recruiter/ApplicantProfile'
+import RecruiterEditDrive from './pages/recruiter/EditDrive'
 
 // Layouts
 import { MainLayout } from './layouts/MainLayout'
 import RecruiterLayout from './layouts/RecruiterLayout'
+import TPOLayout from './layouts/TPOLayout'
 
 // Components
 import PrivateRoute from './components/PrivateRoute'
@@ -126,12 +147,43 @@ function App() {
       element={<Analytics />}
     />
     <Route
+      path="/recruiter/drives/:id"
+      element={<ViewDrive />}
+    />
+    <Route
+      path="/recruiter/drives/edit/:id"
+      element={<RecruiterEditDrive />}
+    />
+    <Route
       path="/recruiter/applicant/:id"
       element={<ApplicantProfile />}
     />
   </Route>
 
-    <Route
+  <Route path="/tpo" element={<TPOLayout />}>
+    <Route index element={<TPODashboard />} />
+    <Route path="profile" element={<TPOProfile />} />
+    <Route path="companies" element={<TPOCompanies />} />
+    <Route path="companies/create" element={<CompanyForm />} />
+    <Route path="companies/edit/:id" element={<EditCompany />} />
+    <Route path="drives" element={<Drives />} />
+    <Route path="drives/create" element={<DriveForm />} />
+    <Route path="drives/edit/:id" element={<TPOEditDrive />} />
+    <Route path="applications" element={<TPOApplications />} />
+    <Route path="applications/:id" element={<ApplicationDetails />} />
+    <Route path="courses" element={<TpoCourses />} />
+    <Route path="courses/create" element={<CourseForm />} />
+    <Route path="courses/edit/:id" element={<EditCourse />} />
+    <Route path="mock-tests" element={<TpoMockTests />} />
+    <Route path="mock-tests/create" element={<MockTestForm />} />
+    <Route path="mock-tests/edit/:id" element={<EditMockTest />} />
+    <Route path="students" element={<Students />} />
+    <Route path="enrollments" element={<TpoEnrollments />} />
+    <Route path="attempts" element={<TpoTestAttempts />} />
+  </Route>
+</Route>
+
+<Route
   path="/recruiter/login"
   element={<RecruiterLogin />}
 />
@@ -140,77 +192,9 @@ function App() {
   path="/recruiter/register"
   element={<RecruiterRegister />}
 />
-</Route>
 
 {/* 404 */}
 <Route path="*" element={<NotFound />} />
-
-              
-
-          {/* =========================
-              RECRUITER ROUTES
-          ========================= */}
-          <Route element={<PrivateRoute />}>
-            <Route element={<RecruiterLayout />}>
-
-              <Route
-                path="/recruiter/dashboard"
-                element={<RecruiterDashboard />}
-              />
-
-              <Route
-                path="/recruiter/create-drive"
-                element={<CreateDrive />}
-              />
-
-              <Route
-                path="/recruiter/manage-drives"
-                element={<ManageDrives />}
-              />
-
-              <Route
-                path="/recruiter/applications"
-                element={<ApplicationsList />}
-              />
-
-              <Route
-                path="/recruiter/interviews"
-                element={<InterviewSchedule />}
-              />
-
-              <Route
-                path="/recruiter/company"
-                element={<CompanyProfile />}
-              />
-
-              <Route
-                path="/recruiter/analytics"
-                element={<Analytics />}
-              />
-              
-              <Route
-  path="/recruiter/drives/:id"
-  element={<ViewDrive />}
-/>
-
-<Route
-  path="/recruiter/drives/edit/:id"
-  element={<EditDrive />}
-/>
-              <Route
-                path="/recruiter/applicant/:id"
-                element={<ApplicantProfile />}
-              />
-
-
-            </Route>
-          </Route>
-
-          {/* 404 */}
-          <Route path="*" element={<NotFound />} />
-       
-        </Routes>
-      </div>
 
       <ToastContainer
         position="bottom-right"

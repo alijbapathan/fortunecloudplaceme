@@ -1,4 +1,4 @@
-import axios from 'axios'
+﻿import axios from 'axios'
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
@@ -26,8 +26,7 @@ export const resolveMediaUrl = (
   }
 
   const normalized = String(path).startsWith(
-    '/'
-  )
+    '/')
     ? path
     : `/${path}`
 
@@ -540,6 +539,7 @@ export const auth = {
       formData
     ),
 }
+
 // ============================================
 // CAREER PROFILE API SERVICES
 // ============================================
@@ -604,8 +604,6 @@ export const career = {
     ),
 }
 
-
-
 // ============================================
 // RECRUITER API SERVICES
 // ============================================
@@ -662,7 +660,7 @@ export const recruiter = {
     ),
 
   updateDrive: (id, data) =>
-  api.patch(`/placement/drives/${id}/`, data),
+    apiClient.patch(`/placement/drives/${id}/`, data),
 
   deleteDrive: (
     id
@@ -731,4 +729,3 @@ export const recruiter = {
       `/placement/interview-schedules/${id}/`
     ),
 }
-
