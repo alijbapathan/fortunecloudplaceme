@@ -8,6 +8,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import NotFound from './pages/NotFound'
 import { StudentDashboard } from './pages/StudentDashboard'
+import TPODashboard from './pages/tpo/tpoDashboard'
 import { Profile } from './pages/Profile'
 import { PlacementDrives } from './pages/PlacementDrives'
 import { Applications } from './pages/Applications'
@@ -22,6 +23,7 @@ import { Training } from './pages/Training'
 import Navbar from './components/Navbar'
 import PrivateRoute from './components/PrivateRoute'
 import { MainLayout } from './layouts/MainLayout'
+import TPOLayout from './layouts/TPOLayout'
 
 function App() {
   // Check localStorage directly for login status
@@ -50,6 +52,13 @@ function App() {
               <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/training" element={<Training />} />
+            </Route>
+
+            {/* TPO routes */}
+            <Route element={<TPOLayout />} path="/tpo">
+              <Route index element={<TPODashboard />} />
+              <Route path="companies" element={<Navigate to="/tpo" replace />} />
+              <Route path="drives" element={<Navigate to="/tpo" replace />} />
             </Route>
           </Route>
 

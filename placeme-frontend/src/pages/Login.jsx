@@ -32,17 +32,25 @@ const Login = () => {
       localStorage.setItem('access_token', access)
       localStorage.setItem('refresh_token', refresh)
 
-      // Fetch user profile
+      // Fetch user profile and decide redirect based on role
+      let userData = { username: formData.username }
       try {
         const userRes = await auth.getProfile()
-        login(userRes.data, access, refresh)
+        userData = userRes.data
+        login(userData, access, refresh)
       } catch (err) {
         console.error('Error fetching profile:', err)
-        login({ username: formData.username }, access, refresh)
+        login(userData, access, refresh)
       }
 
       toast.success('Login successful!')
-      navigate('/dashboard')
+      // Determine if user is a TPO/admin user and redirect accordingly
+      const isTPO = !!(userData.is_staff || userData.is_tpo || userData.role === 'tpo')
+      if (isTPO) {
+        navigate('/tpo')
+      } else {
+        navigate('/dashboard')
+      }
     } catch (error) {
       console.error('Login error:', error.response?.data || error.message)
       const errorMsg = error.response?.data?.detail || 'Invalid username or password'
